@@ -1,39 +1,50 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CollectTrack</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%2313e7c3'/><line x1='16' y1='5' x2='16' y2='27' stroke='%23080808' stroke-width='3' stroke-linecap='round'/><path d='M21 9H13.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H10' stroke='%23080808' stroke-width='3' stroke-linecap='round' fill='none'/></svg>" />
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --bg:            #080808;
-      --surface:       #111111;
-      --surface-2:     #181818;
-      --border:        #222222;
-      --border-bright: #2e2e2e;
-      --accent:        #00e5a0;
-      --accent-dim:    rgba(0, 229, 160, 0.10);
-      --text:          #e2e8f0;
-      --text-dim:      #888888;
-      --text-muted:    #444444;
-      --font-display:  'Montserrat', sans-serif;
-      --font-mono:     'Montserrat', sans-serif;
-      --radius:        8px;
-      --tr:            180ms ease;
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
 
-    html { scroll-behavior: smooth; }
+    :root {
+      --bg: #080808;
+      --surface: #111111c7;
+      --surface-2: #181818;
+      --border: #2222227e;
+      --border-bright: #2e2e2e;
+      --accent: #13e7c3;
+      --accent-dim: rgba(0, 229, 160, 0.10);
+      --text: #e2e8f0;
+      --text-dim: #888888;
+      --text-muted: #8d8d8d;
+      --font-display: 'Montserrat', sans-serif;
+      --font-mono: 'Montserrat', sans-serif;
+      --radius: 8px;
+      --tr: 180ms ease;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
 
     body {
       background-color: var(--bg);
       background-image:
-        linear-gradient(rgba(0,229,160,.025) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0,229,160,.025) 1px, transparent 1px);
+        linear-gradient(rgba(0, 229, 160, .025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 229, 160, .025) 1px, transparent 1px);
       background-size: 44px 44px;
       color: var(--text);
       font-family: var(--font-mono);
@@ -43,24 +54,35 @@
 
     /* ── HEADER ─────────────────────────────────── */
     header {
-      position: sticky; top: 0; z-index: 100;
-      display: flex; align-items: center; justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       padding: 18px 32px;
-      background: rgba(6,9,15,.92);
       backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--border);
     }
 
-    .logo { display: flex; align-items: center; gap: 11px; }
-
-    .logo-mark {
-      width: 34px; height: 34px;
-      background: var(--accent);
-      border-radius: 8px;
-      display: grid; place-items: center;
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 11px;
     }
 
-    .logo-mark svg { display: block; }
+    .logo-mark {
+      width: 34px;
+      height: 34px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+    }
+
+    .logo-mark svg {
+      display: block;
+    }
 
     .logo-name {
       font-family: var(--font-display);
@@ -68,10 +90,16 @@
       font-size: 20px;
       letter-spacing: -.4px;
     }
-    .logo-name em { font-style: normal; color: var(--accent); }
+
+    .logo-name em {
+      font-style: normal;
+      color: var(--accent);
+    }
 
     .header-meta {
-      display: flex; align-items: center; gap: 18px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
     }
 
     #lastUpdated {
@@ -82,10 +110,12 @@
     }
 
     .btn-refresh {
-      display: inline-flex; align-items: center; gap: 7px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
       padding: 7px 15px;
       background: var(--accent-dim);
-      border: 1px solid rgba(0,229,160,.35);
+      border: 1px solid rgba(0, 229, 160, .35);
       border-radius: var(--radius);
       color: var(--accent);
       font-family: var(--font-mono);
@@ -94,21 +124,36 @@
       cursor: pointer;
       transition: all var(--tr);
     }
-    .btn-refresh:hover { background: var(--accent); color: var(--bg); }
-    .btn-refresh.loading .ico-refresh { animation: spin .8s linear infinite; }
 
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .btn-refresh:hover {
+      background: var(--accent);
+      color: var(--bg);
+    }
+
+    .btn-refresh.loading .ico-refresh {
+      animation: spin .8s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
 
     /* ── MAIN ───────────────────────────────────── */
-    main { max-width: 1160px; margin: 0 auto; padding: 36px 32px; }
+    main {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 36px 32px;
+    }
 
     /* ── ERROR ──────────────────────────────────── */
     .error-bar {
       display: none;
       padding: 12px 18px;
       margin-bottom: 24px;
-      background: rgba(239,68,68,.08);
-      border: 1px solid rgba(239,68,68,.28);
+      background: rgba(239, 68, 68, .08);
+      border: 1px solid rgba(239, 68, 68, .28);
       border-radius: var(--radius);
       color: #f87171;
       font-size: 12px;
@@ -121,31 +166,55 @@
       gap: 14px;
       margin-bottom: 28px;
     }
-    @media (max-width: 720px) { .kpi-grid { grid-template-columns: 1fr 1fr; } }
+
+    @media (max-width: 720px) {
+      .kpi-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
 
     .kpi {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 12px;
       padding: 22px 22px 18px;
-      position: relative; overflow: hidden;
-      opacity: 0; transform: translateY(16px);
+      position: relative;
+      overflow: hidden;
+      opacity: 0;
+      transform: translateY(16px);
       animation: fadeUp .45s ease forwards;
     }
-    .kpi:nth-child(1) { animation-delay:  0ms; }
-    .kpi:nth-child(2) { animation-delay: 70ms; }
-    .kpi:nth-child(3) { animation-delay:140ms; }
-    .kpi:nth-child(4) { animation-delay:210ms; }
+
+    .kpi:nth-child(1) {
+      animation-delay: 0ms;
+    }
+
+    .kpi:nth-child(2) {
+      animation-delay: 70ms;
+    }
+
+    .kpi:nth-child(3) {
+      animation-delay: 140ms;
+    }
+
+    .kpi:nth-child(4) {
+      animation-delay: 210ms;
+    }
 
     .kpi::after {
       content: '';
-      position: absolute; inset: 0 0 auto;
+      position: absolute;
+      inset: 0 0 auto;
       height: 2px;
       background: var(--accent);
-      transform: scaleX(0); transform-origin: left;
+      transform: scaleX(0);
+      transform-origin: left;
       transition: transform .3s ease;
     }
-    .kpi:hover::after { transform: scaleX(1); }
+
+    .kpi:hover::after {
+      transform: scaleX(1);
+    }
 
     .kpi-label {
       font-size: 9px;
@@ -157,10 +226,15 @@
 
     .kpi-val {
       font-family: var(--font-display);
-      font-size: 30px; font-weight: 700; line-height: 1;
+      font-size: 30px;
+      font-weight: 700;
+      line-height: 1;
       color: var(--text);
     }
-    .kpi.accent .kpi-val { color: var(--accent); }
+
+    .kpi.accent .kpi-val {
+      color: var(--accent);
+    }
 
     .kpi-sub {
       margin-top: 7px;
@@ -169,7 +243,10 @@
     }
 
     @keyframes fadeUp {
-      to { opacity: 1; transform: translateY(0); }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     /* ── PANEL ──────────────────────────────────── */
@@ -184,33 +261,45 @@
     }
 
     .panel-head {
-      display: flex; align-items: center; justify-content: space-between;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       padding: 17px 22px;
       border-bottom: 1px solid var(--border);
     }
 
     .panel-title {
       font-family: var(--font-display);
-      font-weight: 600; font-size: 12px;
+      font-weight: 600;
+      font-size: 12px;
       letter-spacing: .8px;
       text-transform: uppercase;
       color: var(--text-dim);
     }
 
     .row-count {
-      font-size: 11px; color: var(--text-muted);
+      font-size: 11px;
+      color: var(--text-muted);
     }
-    .row-count b { color: var(--accent); font-weight: 500; }
+
+    .row-count b {
+      color: var(--accent);
+      font-weight: 500;
+    }
 
     /* ── FILTERS ────────────────────────────────── */
     .filters {
-      display: flex; gap: 10px; flex-wrap: wrap;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
       padding: 14px 22px;
       border-bottom: 1px solid var(--border);
     }
 
-    .filter-input, .filter-select {
-      flex: 1; min-width: 160px;
+    .filter-input,
+    .filter-select {
+      flex: 1;
+      min-width: 160px;
       background: var(--bg);
       border: 1px solid var(--border);
       border-radius: var(--radius);
@@ -221,29 +310,60 @@
       outline: none;
       transition: border-color var(--tr);
     }
-    .filter-input:focus, .filter-select:focus { border-color: var(--accent); }
-    .filter-input::placeholder { color: var(--text-muted); }
-    .filter-select option { background: #111827; }
+
+    .filter-input:focus,
+    .filter-select:focus {
+      border-color: var(--accent);
+    }
+
+    .filter-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .filter-select option {
+      background: #111827;
+    }
 
     /* ── TABLE ──────────────────────────────────── */
-    .table-scroll { overflow-x: auto; }
+    .table-scroll {
+      overflow-x: auto;
+    }
 
-    table { width: 100%; border-collapse: collapse; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
 
     thead th {
       padding: 11px 22px;
       text-align: left;
-      font-size: 9px; letter-spacing: 1.6px; text-transform: uppercase;
+      font-size: 9px;
+      letter-spacing: 1.6px;
+      text-transform: uppercase;
       color: var(--text-muted);
       border-bottom: 1px solid var(--border);
-      cursor: pointer; user-select: none; white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
       transition: color var(--tr);
     }
-    thead th:hover  { color: var(--text-dim); }
-    thead th.active { color: var(--accent); }
 
-    .sort-arrow { margin-left: 4px; opacity: .45; }
-    thead th.active .sort-arrow { opacity: 1; }
+    thead th:hover {
+      color: var(--text-dim);
+    }
+
+    thead th.active {
+      color: var(--accent);
+    }
+
+    .sort-arrow {
+      margin-left: 4px;
+      opacity: .45;
+    }
+
+    thead th.active .sort-arrow {
+      opacity: 1;
+    }
 
     tbody tr {
       border-bottom: 1px solid var(--border);
@@ -251,56 +371,119 @@
       opacity: 0;
       animation: fadeIn .3s ease forwards;
     }
-    tbody tr:last-child { border-bottom: none; }
-    tbody tr:hover { background: rgba(255,255,255,.022); }
 
-    tbody td { padding: 15px 22px; font-size: 12px; vertical-align: middle; }
+    tbody tr:last-child {
+      border-bottom: none;
+    }
+
+    tbody tr:hover {
+      background: rgba(255, 255, 255, .022);
+    }
+
+    tbody td {
+      padding: 15px 22px;
+      font-size: 12px;
+      vertical-align: middle;
+    }
 
     .td-name {
       font-family: var(--font-display);
-      font-weight: 600; font-size: 14px;
+      font-weight: 600;
+      font-size: 14px;
       white-space: nowrap;
     }
 
     .td-amount {
-      font-size: 14px; font-weight: 500;
-      color: var(--accent); letter-spacing: -.3px;
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: -.3px;
       white-space: nowrap;
     }
 
     /* ── BADGES ─────────────────────────────────── */
     .badge {
-      display: inline-flex; align-items: center; gap: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
       padding: 4px 10px;
       border-radius: 100px;
-      font-size: 10px; font-weight: 500; letter-spacing: .3px;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: .3px;
       white-space: nowrap;
     }
+
     .dot {
-      width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
     }
 
     /* per-category colors */
-    .cat-youtube      { background:rgba(255,71,71,.13);  color:#ff7b7b; border:1px solid rgba(255,71,71,.28); }
-    .cat-chatgpt      { background:rgba(16,185,129,.13); color:#34d399; border:1px solid rgba(16,185,129,.28); }
-    .cat-servidor_n8n { background:rgba(251,146,60,.13); color:#fb923c; border:1px solid rgba(251,146,60,.28); }
-    .cat-chatbot_ia   { background:rgba(167,139,250,.13);color:#a78bfa; border:1px solid rgba(167,139,250,.28); }
-    .cat-default      { background:rgba(100,116,139,.13);color:#94a3b8; border:1px solid rgba(100,116,139,.28); }
+    .cat-youtube {
+      background: rgba(255, 71, 71, .13);
+      color: #ff7b7b;
+      border: 1px solid rgba(255, 71, 71, .28);
+    }
 
-    .dot-youtube      { background:#ff7b7b; }
-    .dot-chatgpt      { background:#34d399; }
-    .dot-servidor_n8n { background:#fb923c; }
-    .dot-chatbot_ia   { background:#a78bfa; }
-    .dot-default      { background:#94a3b8; }
+    .cat-chatgpt {
+      background: rgba(16, 185, 129, .13);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, .28);
+    }
+
+    .cat-servidor_n8n {
+      background: rgba(251, 146, 60, .13);
+      color: #fb923c;
+      border: 1px solid rgba(251, 146, 60, .28);
+    }
+
+    .cat-chatbot_ia {
+      background: rgba(167, 139, 250, .13);
+      color: #a78bfa;
+      border: 1px solid rgba(167, 139, 250, .28);
+    }
+
+    .cat-default {
+      background: rgba(100, 116, 139, .13);
+      color: #94a3b8;
+      border: 1px solid rgba(100, 116, 139, .28);
+    }
+
+    .dot-youtube {
+      background: #ff7b7b;
+    }
+
+    .dot-chatgpt {
+      background: #34d399;
+    }
+
+    .dot-servidor_n8n {
+      background: #fb923c;
+    }
+
+    .dot-chatbot_ia {
+      background: #a78bfa;
+    }
+
+    .dot-default {
+      background: #94a3b8;
+    }
 
     /* ── DATE CHIP ───────────────────────────────── */
     .day-chip {
-      display: inline-flex; align-items: center; justify-content: center;
-      min-width: 28px; height: 28px; padding: 0 7px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 28px;
+      height: 28px;
+      padding: 0 7px;
       background: var(--surface-2);
       border: 1px solid var(--border);
       border-radius: 6px;
-      font-size: 12px; color: var(--text-dim);
+      font-size: 12px;
+      color: var(--text-dim);
     }
 
     /* ── EMPTY / LOADING ────────────────────────── */
@@ -310,9 +493,13 @@
       color: var(--text-muted);
       font-size: 13px;
     }
+
     .spinner {
-      display: inline-block; vertical-align: middle;
-      width: 16px; height: 16px; margin-right: 8px;
+      display: inline-block;
+      vertical-align: middle;
+      width: 16px;
+      height: 16px;
+      margin-right: 8px;
       border: 2px solid var(--border);
       border-top-color: var(--accent);
       border-radius: 50%;
@@ -334,415 +521,504 @@
       padding: 16px 16px 14px;
       transition: border-color var(--tr);
     }
-    .sum-card:hover { border-color: var(--border-bright); }
+
+    .sum-card:hover {
+      border-color: var(--border-bright);
+    }
 
     .sum-head {
-      display: flex; align-items: center; gap: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
       margin-bottom: 11px;
     }
+
     .sum-name {
       font-family: var(--font-display);
-      font-size: 12px; font-weight: 600;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
+
     .sum-total {
       font-family: var(--font-display);
-      font-size: 22px; font-weight: 700;
-      color: var(--text); line-height: 1;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1;
       margin-bottom: 5px;
     }
-    .sum-meta { font-size: 10px; color: var(--text-muted); }
 
-    @keyframes fadeIn { to { opacity: 1; } }
+    .sum-meta {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    @keyframes fadeIn {
+      to {
+        opacity: 1;
+      }
+    }
 
     /* ── RESPONSIVE ─────────────────────────────── */
     @media (max-width: 640px) {
-      header { padding: 12px 16px; }
-      #lastUpdated { display: none; }
-      .btn-label { display: none; }
-      .btn-refresh { padding: 8px 10px; }
+      header {
+        padding: 12px 16px;
+      }
 
-      main { padding: 18px 14px; }
+      #lastUpdated {
+        display: none;
+      }
 
-      .kpi-grid { gap: 10px; margin-bottom: 18px; }
-      .kpi { padding: 14px 14px 12px; border-radius: 10px; }
-      .kpi-val { font-size: 20px; }
-      .kpi-sub { display: none; }
-      .kpi-label { margin-bottom: 7px; }
+      .btn-label {
+        display: none;
+      }
 
-      .panel { border-radius: 10px; margin-bottom: 14px; }
-      .panel-head { padding: 12px 14px; }
+      .btn-refresh {
+        padding: 8px 10px;
+      }
+
+      main {
+        padding: 18px 14px;
+      }
+
+      .kpi-grid {
+        gap: 10px;
+        margin-bottom: 18px;
+      }
+
+      .kpi {
+        padding: 14px 14px 12px;
+        border-radius: 10px;
+      }
+
+      .kpi-val {
+        font-size: 20px;
+      }
+
+      .kpi-sub {
+        display: none;
+      }
+
+      .kpi-label {
+        margin-bottom: 7px;
+      }
+
+      .panel {
+        border-radius: 10px;
+        margin-bottom: 14px;
+      }
+
+      .panel-head {
+        padding: 12px 14px;
+      }
 
       .filters {
         flex-direction: column;
         gap: 8px;
         padding: 12px 14px;
       }
-      .filter-input, .filter-select { min-width: unset; width: 100%; flex: none; }
 
-      thead th { padding: 9px 12px; font-size: 8px; letter-spacing: 1px; }
-      tbody td { padding: 12px 12px; font-size: 11px; }
-      .td-name { font-size: 13px; }
-      .td-amount { font-size: 13px; }
+      .filter-input,
+      .filter-select {
+        min-width: unset;
+        width: 100%;
+        flex: none;
+      }
+
+      thead th {
+        padding: 9px 12px;
+        font-size: 8px;
+        letter-spacing: 1px;
+      }
+
+      tbody td {
+        padding: 12px 12px;
+        font-size: 11px;
+      }
+
+      .td-name {
+        font-size: 13px;
+      }
+
+      .td-amount {
+        font-size: 13px;
+      }
 
       .summary-grid {
         grid-template-columns: 1fr 1fr;
         gap: 10px;
         padding: 14px;
       }
-      .sum-total { font-size: 17px; }
-      .sum-name { font-size: 11px; }
+
+      .sum-total {
+        font-size: 17px;
+      }
+
+      .sum-name {
+        font-size: 11px;
+      }
     }
 
     @media (max-width: 380px) {
-      .kpi-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
-      .kpi-val { font-size: 18px; }
-      .summary-grid { grid-template-columns: 1fr; }
+      .kpi-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .kpi-val {
+        font-size: 18px;
+      }
+
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
+
 <body>
 
-<!-- ── HEADER ──────────────────────────────────────── -->
-<header>
-  <div class="logo">
-    <div class="logo-mark">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-           stroke="#06090f" stroke-width="2.5"
-           stroke-linecap="round" stroke-linejoin="round">
-        <line x1="12" y1="1" x2="12" y2="23"/>
-        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-      </svg>
+  <!-- ── HEADER ──────────────────────────────────────── -->
+  <header>
+    <div class="logo">
+      <div class="logo-mark">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#06090f" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="1" x2="12" y2="23" />
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+        </svg>
+      </div>
+      <span class="logo-name">Collect<em>Track</em></span>
     </div>
-    <span class="logo-name">Collect<em>Track</em></span>
-  </div>
-  <div class="header-meta">
-    <span id="lastUpdated"></span>
-    <button class="btn-refresh" id="btnRefresh" onclick="loadData()">
-      <svg class="ico-refresh" width="11" height="11" viewBox="0 0 24 24" fill="none"
-           stroke="currentColor" stroke-width="2.5"
-           stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="23 4 23 10 17 10"/>
-        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-      </svg>
-      <span class="btn-label">Actualizar</span>
-    </button>
-  </div>
-</header>
+    <div class="header-meta">
+      <span id="lastUpdated"></span>
+      <button class="btn-refresh" id="btnRefresh" onclick="loadData()">
+        <svg class="ico-refresh" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10" />
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+        </svg>
+        <span class="btn-label">Actualizar</span>
+      </button>
+    </div>
+  </header>
 
-<!-- ── MAIN ────────────────────────────────────────── -->
-<main>
+  <!-- ── MAIN ────────────────────────────────────────── -->
+  <main>
 
-  <div class="error-bar" id="errorBar">
-    ⚠&nbsp; No se pudo cargar la hoja de cálculo. Verifica que el enlace esté publicado e inténtalo de nuevo.
-  </div>
-
-  <!-- KPI cards -->
-  <div class="kpi-grid">
-    <div class="kpi accent">
-      <div class="kpi-label">Total a cobrar</div>
-      <div class="kpi-val" id="kpiTotal">—</div>
-      <div class="kpi-sub">suma de cobros activos</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-label">Cobros</div>
-      <div class="kpi-val" id="kpiCount">—</div>
-      <div class="kpi-sub">registros en hoja</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-label">Personas</div>
-      <div class="kpi-val" id="kpiPeople">—</div>
-      <div class="kpi-sub">clientes únicos</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-label">Categorías</div>
-      <div class="kpi-val" id="kpiCats">—</div>
-      <div class="kpi-sub">servicios distintos</div>
-    </div>
-  </div>
-
-  <!-- Main table panel -->
-  <div class="panel">
-    <div class="panel-head">
-      <span class="panel-title">Cobros</span>
-      <span class="row-count">
-        mostrando <b id="visibleCount">0</b> de <b id="totalCount">0</b>
-      </span>
+    <div class="error-bar" id="errorBar">
+      ⚠&nbsp; No se pudo cargar la hoja de cálculo. Verifica que el enlace esté publicado e inténtalo de nuevo.
     </div>
 
-    <div class="filters">
-      <input  class="filter-input"  id="searchInput"    type="text"
-              placeholder="Buscar por nombre…" oninput="applyFilters()" />
-      <select class="filter-select" id="filterCategory" onchange="applyFilters()">
-        <option value="">Todas las categorías</option>
-      </select>
-      <select class="filter-select" id="filterDate"     onchange="applyFilters()">
-        <option value="">Todos los días</option>
-      </select>
+    <!-- KPI cards -->
+    <div class="kpi-grid">
+      <div class="kpi accent">
+        <div class="kpi-label">Total a cobrar</div>
+        <div class="kpi-val" id="kpiTotal">—</div>
+        <div class="kpi-sub">suma de cobros activos</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Cobros</div>
+        <div class="kpi-val" id="kpiCount">—</div>
+        <div class="kpi-sub">registros en hoja</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Personas</div>
+        <div class="kpi-val" id="kpiPeople">—</div>
+        <div class="kpi-sub">clientes únicos</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Categorías</div>
+        <div class="kpi-val" id="kpiCats">—</div>
+        <div class="kpi-sub">servicios distintos</div>
+      </div>
     </div>
 
-    <div class="table-scroll">
-      <table>
-        <thead>
-          <tr>
-            <th onclick="sortBy('name')"    >Nombre       <span class="sort-arrow" id="sa-name"    >↕</span></th>
-            <th onclick="sortBy('category')">Categoría    <span class="sort-arrow" id="sa-category">↕</span></th>
-            <th onclick="sortBy('amount')"  >Monto        <span class="sort-arrow" id="sa-amount"  >↕</span></th>
-            <th onclick="sortBy('date')"    >Día de cobro <span class="sort-arrow" id="sa-date"    >↕</span></th>
-          </tr>
-        </thead>
-        <tbody id="tableBody">
-          <tr class="state-row">
-            <td colspan="4"><span class="spinner"></span>Cargando datos…</td>
-          </tr>
-        </tbody>
-      </table>
+    <!-- Main table panel -->
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-title">Cobros</span>
+        <span class="row-count">
+          mostrando <b id="visibleCount">0</b> de <b id="totalCount">0</b>
+        </span>
+      </div>
+
+      <div class="filters">
+        <input class="filter-input" id="searchInput" type="text" placeholder="Buscar por nombre…"
+          oninput="applyFilters()" />
+        <select class="filter-select" id="filterCategory" onchange="applyFilters()">
+          <option value="">Todas las categorías</option>
+        </select>
+        <select class="filter-select" id="filterDate" onchange="applyFilters()">
+          <option value="">Todos los días</option>
+        </select>
+      </div>
+
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th onclick="sortBy('name')">Nombre <span class="sort-arrow" id="sa-name">↕</span></th>
+              <th onclick="sortBy('category')">Categoría <span class="sort-arrow" id="sa-category">↕</span></th>
+              <th onclick="sortBy('amount')">Monto <span class="sort-arrow" id="sa-amount">↕</span></th>
+              <th onclick="sortBy('date')">Día de cobro <span class="sort-arrow" id="sa-date">↕</span></th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr class="state-row">
+              <td colspan="4"><span class="spinner"></span>Cargando datos…</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div>
 
-  <!-- Summary by category -->
-  <div class="panel" id="summaryPanel" style="animation-delay:.38s">
-    <div class="panel-head">
-      <span class="panel-title">Resumen por categoría</span>
+    <!-- Summary by category -->
+    <div class="panel" id="summaryPanel" style="animation-delay:.38s">
+      <div class="panel-head">
+        <span class="panel-title">Resumen por categoría</span>
+      </div>
+      <div class="summary-grid" id="summaryGrid"></div>
     </div>
-    <div class="summary-grid" id="summaryGrid"></div>
-  </div>
 
-</main>
+  </main>
 
-<script>
-/* ── CONFIG ─────────────────────────────────────────── */
-const CSV_URL =
-  'https://docs.google.com/spreadsheets/d/e/' +
-  '2PACX-1vQ3ft5Mfo9oXwRGVD974mP6myIhR4KU-EA0mnKFNu6bjKBdIubZES8zKsUovNKoa6eJYAUrpURgm5uF' +
-  '/pub?gid=0&single=true&output=csv';
+  <script>
+    /* ── CONFIG ─────────────────────────────────────────── */
+    const CSV_URL =
+      'https://docs.google.com/spreadsheets/d/e/' +
+      '2PACX-1vQ3ft5Mfo9oXwRGVD974mP6myIhR4KU-EA0mnKFNu6bjKBdIubZES8zKsUovNKoa6eJYAUrpURgm5uF' +
+      '/pub?gid=0&single=true&output=csv';
 
-/* ── STATE ──────────────────────────────────────────── */
-let allData      = [];
-let filteredData = [];
-let sortCol      = null;
-let sortDir      = 'asc';
+    /* ── STATE ──────────────────────────────────────────── */
+    let allData = [];
+    let filteredData = [];
+    let sortCol = null;
+    let sortDir = 'asc';
 
-/* ── CATEGORY STYLE MAP ─────────────────────────────── */
-const CAT_STYLE = {
-  youtube:      { badge: 'cat-youtube',      dot: 'dot-youtube'      },
-  chatgpt:      { badge: 'cat-chatgpt',      dot: 'dot-chatgpt'      },
-  servidor_n8n: { badge: 'cat-servidor_n8n', dot: 'dot-servidor_n8n' },
-  chatbot_ia:   { badge: 'cat-chatbot_ia',   dot: 'dot-chatbot_ia'   },
-};
+    /* ── CATEGORY STYLE MAP ─────────────────────────────── */
+    const CAT_STYLE = {
+      youtube: { badge: 'cat-youtube', dot: 'dot-youtube' },
+      chatgpt: { badge: 'cat-chatgpt', dot: 'dot-chatgpt' },
+      servidor_n8n: { badge: 'cat-servidor_n8n', dot: 'dot-servidor_n8n' },
+      chatbot_ia: { badge: 'cat-chatbot_ia', dot: 'dot-chatbot_ia' },
+    };
 
-function catStyle(raw) {
-  const key = (raw || '').toLowerCase().replace(/\s+/g, '_');
-  return CAT_STYLE[key] || { badge: 'cat-default', dot: 'dot-default' };
-}
-
-/* ── HELPERS ────────────────────────────────────────── */
-function parseAmount(str) {
-  // "$21.000"  →  21000   (Colombian thousands-dot format)
-  if (!str) return 0;
-  return parseFloat(str.replace(/\$/g, '').replace(/\./g, '').replace(',', '.').trim()) || 0;
-}
-
-function fmtAmount(n) {
-  return '$' + n.toLocaleString('es-CO');
-}
-
-function parseCsv(raw) {
-  const lines = raw.trim().split(/\r?\n/);
-  if (lines.length < 2) return [];
-  const headers = splitCsvLine(lines[0]).map(h => h.toUpperCase().trim());
-  return lines.slice(1)
-    .map(line => {
-      const cols = splitCsvLine(line);
-      const obj  = {};
-      headers.forEach((h, i) => { obj[h] = (cols[i] || '').trim(); });
-      return obj;
-    })
-    .filter(r => r.NAME);
-}
-
-function splitCsvLine(line) {
-  const out = []; let cur = '', inQ = false;
-  for (const ch of line) {
-    if (ch === '"') { inQ = !inQ; }
-    else if (ch === ',' && !inQ) { out.push(cur); cur = ''; }
-    else { cur += ch; }
-  }
-  out.push(cur);
-  return out;
-}
-
-/* ── LOAD ───────────────────────────────────────────── */
-async function loadData() {
-  const btn = document.getElementById('btnRefresh');
-  btn.classList.add('loading');
-  document.getElementById('errorBar').style.display = 'none';
-  document.getElementById('tableBody').innerHTML =
-    '<tr class="state-row"><td colspan="4"><span class="spinner"></span>Cargando datos…</td></tr>';
-
-  try {
-    const res = await fetch(CSV_URL);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const text = await res.text();
-
-    const rows = parseCsv(text);
-    allData = rows.map(r => ({
-      name:      r.NAME      || '',
-      rawAmount: r.AMOUNT    || '',
-      amountNum: parseAmount(r.AMOUNT),
-      category:  r.CATEGORY  || '',
-      date:      r.DATE      || '',
-    }));
-
-    populateFilters();
-    applyFilters();
-    updateKPIs();
-    renderSummary();
-
-    const t = new Date();
-    document.getElementById('lastUpdated').textContent =
-      'actualizado ' + t.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
-
-  } catch (err) {
-    console.error(err);
-    document.getElementById('errorBar').style.display = 'block';
-    document.getElementById('tableBody').innerHTML =
-      '<tr class="state-row"><td colspan="4">No se pudieron cargar los datos.</td></tr>';
-  } finally {
-    btn.classList.remove('loading');
-  }
-}
-
-/* ── FILTERS ────────────────────────────────────────── */
-function populateFilters() {
-  const cats  = [...new Set(allData.map(r => r.category).filter(Boolean))].sort();
-  const dates = [...new Set(allData.map(r => r.date).filter(Boolean))].sort((a, b) => +a - +b);
-
-  document.getElementById('filterCategory').innerHTML =
-    '<option value="">Todas las categorías</option>' +
-    cats.map(c => `<option value="${c}">${c.replace(/_/g, ' ')}</option>`).join('');
-
-  document.getElementById('filterDate').innerHTML =
-    '<option value="">Todos los días</option>' +
-    dates.map(d => `<option value="${d}">Día ${d}</option>`).join('');
-}
-
-function applyFilters() {
-  const search = document.getElementById('searchInput').value.toLowerCase().trim();
-  const cat    = document.getElementById('filterCategory').value;
-  const date   = document.getElementById('filterDate').value;
-
-  filteredData = allData.filter(r => {
-    if (search && !r.name.toLowerCase().includes(search)) return false;
-    if (cat  && r.category !== cat)  return false;
-    if (date && r.date     !== date) return false;
-    return true;
-  });
-
-  if (sortCol) sortFiltered();
-  renderTable();
-}
-
-/* ── SORT ───────────────────────────────────────────── */
-const SORT_COLS = ['name', 'category', 'amount', 'date'];
-
-function sortBy(col) {
-  sortDir = (sortCol === col && sortDir === 'asc') ? 'desc' : 'asc';
-  sortCol = col;
-
-  document.querySelectorAll('thead th').forEach((th, i) => {
-    th.classList.toggle('active', SORT_COLS[i] === col);
-  });
-  SORT_COLS.forEach(c => {
-    document.getElementById(`sa-${c}`).textContent = '↕';
-  });
-  document.getElementById(`sa-${col}`).textContent = sortDir === 'asc' ? '↑' : '↓';
-
-  sortFiltered();
-  renderTable();
-}
-
-function sortFiltered() {
-  filteredData.sort((a, b) => {
-    let va, vb;
-    switch (sortCol) {
-      case 'amount':   va = a.amountNum;           vb = b.amountNum;           break;
-      case 'date':     va = +a.date || 0;          vb = +b.date || 0;          break;
-      case 'name':     va = a.name.toLowerCase();  vb = b.name.toLowerCase();  break;
-      case 'category': va = a.category.toLowerCase(); vb = b.category.toLowerCase(); break;
-      default:         return 0;
+    function catStyle(raw) {
+      const key = (raw || '').toLowerCase().replace(/\s+/g, '_');
+      return CAT_STYLE[key] || { badge: 'cat-default', dot: 'dot-default' };
     }
-    if (va < vb) return sortDir === 'asc' ? -1 : 1;
-    if (va > vb) return sortDir === 'asc' ?  1 : -1;
-    return 0;
-  });
-}
 
-/* ── RENDER TABLE ───────────────────────────────────── */
-function renderTable() {
-  document.getElementById('visibleCount').textContent = filteredData.length;
-  document.getElementById('totalCount').textContent   = allData.length;
+    /* ── HELPERS ────────────────────────────────────────── */
+    function parseAmount(str) {
+      // "$21.000"  →  21000   (Colombian thousands-dot format)
+      if (!str) return 0;
+      return parseFloat(str.replace(/\$/g, '').replace(/\./g, '').replace(',', '.').trim()) || 0;
+    }
 
-  const tbody = document.getElementById('tableBody');
+    function fmtAmount(n) {
+      return '$' + n.toLocaleString('es-CO');
+    }
 
-  if (!filteredData.length) {
-    tbody.innerHTML =
-      '<tr class="state-row"><td colspan="4">No se encontraron cobros con esos filtros.</td></tr>';
-    return;
-  }
+    function parseCsv(raw) {
+      const lines = raw.trim().split(/\r?\n/);
+      if (lines.length < 2) return [];
+      const headers = splitCsvLine(lines[0]).map(h => h.toUpperCase().trim());
+      return lines.slice(1)
+        .map(line => {
+          const cols = splitCsvLine(line);
+          const obj = {};
+          headers.forEach((h, i) => { obj[h] = (cols[i] || '').trim(); });
+          return obj;
+        })
+        .filter(r => r.NAME);
+    }
 
-  tbody.innerHTML = filteredData.map((r, i) => {
-    const s = catStyle(r.category);
-    const catLabel = r.category ? r.category.replace(/_/g, ' ') : null;
+    function splitCsvLine(line) {
+      const out = []; let cur = '', inQ = false;
+      for (const ch of line) {
+        if (ch === '"') { inQ = !inQ; }
+        else if (ch === ',' && !inQ) { out.push(cur); cur = ''; }
+        else { cur += ch; }
+      }
+      out.push(cur);
+      return out;
+    }
 
-    const catCell = catLabel
-      ? `<span class="badge ${s.badge}"><span class="dot ${s.dot}"></span>${catLabel}</span>`
-      : `<span style="color:var(--text-muted)">—</span>`;
+    /* ── LOAD ───────────────────────────────────────────── */
+    async function loadData() {
+      const btn = document.getElementById('btnRefresh');
+      btn.classList.add('loading');
+      document.getElementById('errorBar').style.display = 'none';
+      document.getElementById('tableBody').innerHTML =
+        '<tr class="state-row"><td colspan="4"><span class="spinner"></span>Cargando datos…</td></tr>';
 
-    const dateCell = r.date
-      ? `<span class="day-chip">${r.date}</span>`
-      : `<span style="color:var(--text-muted)">—</span>`;
+      try {
+        const res = await fetch(CSV_URL);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const text = await res.text();
 
-    return `<tr style="animation-delay:${i * 35}ms">
+        const rows = parseCsv(text);
+        allData = rows.map(r => ({
+          name: r.NAME || '',
+          rawAmount: r.AMOUNT || '',
+          amountNum: parseAmount(r.AMOUNT),
+          category: r.CATEGORY || '',
+          date: r.DATE || '',
+        }));
+
+        populateFilters();
+        applyFilters();
+        updateKPIs();
+        renderSummary();
+
+        const t = new Date();
+        document.getElementById('lastUpdated').textContent =
+          'actualizado ' + t.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+
+      } catch (err) {
+        console.error(err);
+        document.getElementById('errorBar').style.display = 'block';
+        document.getElementById('tableBody').innerHTML =
+          '<tr class="state-row"><td colspan="4">No se pudieron cargar los datos.</td></tr>';
+      } finally {
+        btn.classList.remove('loading');
+      }
+    }
+
+    /* ── FILTERS ────────────────────────────────────────── */
+    function populateFilters() {
+      const cats = [...new Set(allData.map(r => r.category).filter(Boolean))].sort();
+      const dates = [...new Set(allData.map(r => r.date).filter(Boolean))].sort((a, b) => +a - +b);
+
+      document.getElementById('filterCategory').innerHTML =
+        '<option value="">Todas las categorías</option>' +
+        cats.map(c => `<option value="${c}">${c.replace(/_/g, ' ')}</option>`).join('');
+
+      document.getElementById('filterDate').innerHTML =
+        '<option value="">Todos los días</option>' +
+        dates.map(d => `<option value="${d}">Día ${d}</option>`).join('');
+    }
+
+    function applyFilters() {
+      const search = document.getElementById('searchInput').value.toLowerCase().trim();
+      const cat = document.getElementById('filterCategory').value;
+      const date = document.getElementById('filterDate').value;
+
+      filteredData = allData.filter(r => {
+        if (search && !r.name.toLowerCase().includes(search)) return false;
+        if (cat && r.category !== cat) return false;
+        if (date && r.date !== date) return false;
+        return true;
+      });
+
+      if (sortCol) sortFiltered();
+      renderTable();
+    }
+
+    /* ── SORT ───────────────────────────────────────────── */
+    const SORT_COLS = ['name', 'category', 'amount', 'date'];
+
+    function sortBy(col) {
+      sortDir = (sortCol === col && sortDir === 'asc') ? 'desc' : 'asc';
+      sortCol = col;
+
+      document.querySelectorAll('thead th').forEach((th, i) => {
+        th.classList.toggle('active', SORT_COLS[i] === col);
+      });
+      SORT_COLS.forEach(c => {
+        document.getElementById(`sa-${c}`).textContent = '↕';
+      });
+      document.getElementById(`sa-${col}`).textContent = sortDir === 'asc' ? '↑' : '↓';
+
+      sortFiltered();
+      renderTable();
+    }
+
+    function sortFiltered() {
+      filteredData.sort((a, b) => {
+        let va, vb;
+        switch (sortCol) {
+          case 'amount': va = a.amountNum; vb = b.amountNum; break;
+          case 'date': va = +a.date || 0; vb = +b.date || 0; break;
+          case 'name': va = a.name.toLowerCase(); vb = b.name.toLowerCase(); break;
+          case 'category': va = a.category.toLowerCase(); vb = b.category.toLowerCase(); break;
+          default: return 0;
+        }
+        if (va < vb) return sortDir === 'asc' ? -1 : 1;
+        if (va > vb) return sortDir === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    /* ── RENDER TABLE ───────────────────────────────────── */
+    function renderTable() {
+      document.getElementById('visibleCount').textContent = filteredData.length;
+      document.getElementById('totalCount').textContent = allData.length;
+
+      const tbody = document.getElementById('tableBody');
+
+      if (!filteredData.length) {
+        tbody.innerHTML =
+          '<tr class="state-row"><td colspan="4">No se encontraron cobros con esos filtros.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = filteredData.map((r, i) => {
+        const s = catStyle(r.category);
+        const catLabel = r.category ? r.category.replace(/_/g, ' ') : null;
+
+        const catCell = catLabel
+          ? `<span class="badge ${s.badge}"><span class="dot ${s.dot}"></span>${catLabel}</span>`
+          : `<span style="color:var(--text-muted)">—</span>`;
+
+        const dateCell = r.date
+          ? `<span class="day-chip">${r.date}</span>`
+          : `<span style="color:var(--text-muted)">—</span>`;
+
+        return `<tr style="animation-delay:${i * 35}ms">
       <td class="td-name">${r.name}</td>
       <td>${catCell}</td>
       <td class="td-amount">${r.rawAmount || '—'}</td>
       <td>${dateCell}</td>
     </tr>`;
-  }).join('');
-}
+      }).join('');
+    }
 
-/* ── KPI CARDS ──────────────────────────────────────── */
-function updateKPIs() {
-  const total   = allData.reduce((s, r) => s + r.amountNum, 0);
-  const people  = new Set(allData.map(r => r.name.trim().toLowerCase())).size;
-  const cats    = new Set(allData.map(r => r.category).filter(Boolean)).size;
+    /* ── KPI CARDS ──────────────────────────────────────── */
+    function updateKPIs() {
+      const total = allData.reduce((s, r) => s + r.amountNum, 0);
+      const people = new Set(allData.map(r => r.name.trim().toLowerCase())).size;
+      const cats = new Set(allData.map(r => r.category).filter(Boolean)).size;
 
-  document.getElementById('kpiTotal' ).textContent = fmtAmount(total);
-  document.getElementById('kpiCount' ).textContent = allData.length;
-  document.getElementById('kpiPeople').textContent = people;
-  document.getElementById('kpiCats'  ).textContent = cats;
-}
+      document.getElementById('kpiTotal').textContent = fmtAmount(total);
+      document.getElementById('kpiCount').textContent = allData.length;
+      document.getElementById('kpiPeople').textContent = people;
+      document.getElementById('kpiCats').textContent = cats;
+    }
 
-/* ── SUMMARY ────────────────────────────────────────── */
-function renderSummary() {
-  const map = {};
-  allData.forEach(r => {
-    const key = r.category || 'Sin categoría';
-    if (!map[key]) map[key] = { total: 0, count: 0, people: new Set() };
-    map[key].total += r.amountNum;
-    map[key].count++;
-    map[key].people.add(r.name.trim().toLowerCase());
-  });
+    /* ── SUMMARY ────────────────────────────────────────── */
+    function renderSummary() {
+      const map = {};
+      allData.forEach(r => {
+        const key = r.category || 'Sin categoría';
+        if (!map[key]) map[key] = { total: 0, count: 0, people: new Set() };
+        map[key].total += r.amountNum;
+        map[key].count++;
+        map[key].people.add(r.name.trim().toLowerCase());
+      });
 
-  document.getElementById('summaryGrid').innerHTML =
-    Object.entries(map)
-      .sort(([, a], [, b]) => b.total - a.total)
-      .map(([cat, d]) => {
-        const s    = catStyle(cat === 'Sin categoría' ? null : cat);
-        const lbl  = cat.replace(/_/g, ' ');
-        const p    = d.people.size;
-        return `<div class="sum-card">
+      document.getElementById('summaryGrid').innerHTML =
+        Object.entries(map)
+          .sort(([, a], [, b]) => b.total - a.total)
+          .map(([cat, d]) => {
+            const s = catStyle(cat === 'Sin categoría' ? null : cat);
+            const lbl = cat.replace(/_/g, ' ');
+            const p = d.people.size;
+            return `<div class="sum-card">
           <div class="sum-head">
             <span class="dot ${s.dot}" style="width:8px;height:8px;flex-shrink:0"></span>
             <span class="sum-name">${lbl}</span>
@@ -750,11 +1026,12 @@ function renderSummary() {
           <div class="sum-total">${fmtAmount(d.total)}</div>
           <div class="sum-meta">${p} persona${p !== 1 ? 's' : ''} · ${d.count} cobro${d.count !== 1 ? 's' : ''}</div>
         </div>`;
-      }).join('');
-}
+          }).join('');
+    }
 
-/* ── INIT ───────────────────────────────────────────── */
-loadData();
-</script>
+    /* ── INIT ───────────────────────────────────────────── */
+    loadData();
+  </script>
 </body>
+
 </html>
