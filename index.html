@@ -9,6 +9,12 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap"
     rel="stylesheet" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#13e7c3" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="CollectTrack" />
+  <link rel="apple-touch-icon" href="icon.svg" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%2313e7c3'/><line x1='16' y1='5' x2='16' y2='27' stroke='%23080808' stroke-width='3' stroke-linecap='round'/><path d='M21 9H13.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H10' stroke='%23080808' stroke-width='3' stroke-linecap='round' fill='none'/></svg>" />
   <style>
     *,
@@ -848,14 +854,56 @@
       return out;
     }
 
+    /* ── CACHE ──────────────────────────────────────────── */
+    const CACHE_KEY = 'collecttrack_v1';
+
+    function saveCache(data) {
+      localStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() }));
+    }
+
+    function loadCache() {
+      try {
+        const raw = localStorage.getItem(CACHE_KEY);
+        return raw ? JSON.parse(raw) : null;
+      } catch { return null; }
+    }
+
+    function formatAgo(ts) {
+      const m = Math.floor((Date.now() - ts) / 60000);
+      if (m < 1)  return 'hace un momento';
+      if (m < 60) return `hace ${m}m`;
+      const h = Math.floor(m / 60);
+      if (h < 24) return `hace ${h}h`;
+      return `hace ${Math.floor(h / 24)}d`;
+    }
+
+    function setStatus(text, color) {
+      const el = document.getElementById('lastUpdated');
+      el.textContent = text;
+      el.style.color = color || '';
+    }
+
     /* ── LOAD ───────────────────────────────────────────── */
     async function loadData() {
       const btn = document.getElementById('btnRefresh');
       btn.classList.add('loading');
       document.getElementById('errorBar').style.display = 'none';
-      document.getElementById('tableBody').innerHTML =
-        '<tr class="state-row"><td colspan="4"><span class="spinner"></span>Cargando datos…</td></tr>';
 
+      // 1 — Render cache immediately if available
+      const cached = loadCache();
+      if (cached) {
+        allData = cached.data;
+        populateFilters();
+        applyFilters();
+        updateKPIs();
+        renderSummary();
+        setStatus('caché · ' + formatAgo(cached.ts), 'var(--text-muted)');
+      } else {
+        document.getElementById('tableBody').innerHTML =
+          '<tr class="state-row"><td colspan="4"><span class="spinner"></span>Cargando datos…</td></tr>';
+      }
+
+      // 2 — Fetch fresh data
       try {
         const res = await fetch(CSV_URL);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -863,27 +911,31 @@
 
         const rows = parseCsv(text);
         allData = rows.map(r => ({
-          name: r.NAME || '',
-          rawAmount: r.AMOUNT || '',
+          name:      r.NAME     || '',
+          rawAmount: r.AMOUNT   || '',
           amountNum: parseAmount(r.AMOUNT),
-          category: r.CATEGORY || '',
-          date: r.DATE || '',
+          category:  r.CATEGORY || '',
+          date:      r.DATE     || '',
         }));
 
+        saveCache(allData);
         populateFilters();
         applyFilters();
         updateKPIs();
         renderSummary();
 
         const t = new Date();
-        document.getElementById('lastUpdated').textContent =
-          'actualizado ' + t.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+        setStatus('actualizado ' + t.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }));
 
       } catch (err) {
         console.error(err);
-        document.getElementById('errorBar').style.display = 'block';
-        document.getElementById('tableBody').innerHTML =
-          '<tr class="state-row"><td colspan="4">No se pudieron cargar los datos.</td></tr>';
+        if (allData.length) {
+          setStatus('sin conexión', '#f87171');
+        } else {
+          document.getElementById('errorBar').style.display = 'block';
+          document.getElementById('tableBody').innerHTML =
+            '<tr class="state-row"><td colspan="4">No se pudieron cargar los datos.</td></tr>';
+        }
       } finally {
         btn.classList.remove('loading');
       }
@@ -1027,6 +1079,11 @@
           <div class="sum-meta">${p} persona${p !== 1 ? 's' : ''} · ${d.count} cobro${d.count !== 1 ? 's' : ''}</div>
         </div>`;
           }).join('');
+    }
+
+    /* ── SERVICE WORKER ─────────────────────────────────── */
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
     }
 
     /* ── INIT ───────────────────────────────────────────── */

@@ -1,0 +1,19 @@
+{
+  "name": "CollectTrack",
+  "short_name": "CollectTrack",
+  "description": "Control de cobros personales",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#13e7c3",
+  "background_color": "#080808",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
