@@ -249,12 +249,16 @@
       color: var(--accent);
     }
 
+    .kpi.danger .kpi-val {
+      color: var(--danger);
+    }
+
     .kpi.negative .kpi-val {
-      color: var(--text);
+      color: var(--danger);
     }
 
     .kpi .kpi-val {
-      color: var(--danger);
+      color: var(--text);
     }
 
     .kpi-sub {
@@ -887,7 +891,7 @@
         <div class="kpi-val" id="kpiTotal">—</div>
         <div class="kpi-sub">total a cobrar</div>
       </div>
-      <div class="kpi">
+      <div class="kpi danger">
         <div class="kpi-label">Gastos</div>
         <div class="kpi-val" id="kpiExpenses">—</div>
         <div class="kpi-sub">total pagado</div>
