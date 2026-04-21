@@ -15,7 +15,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="CollectTrack" />
   <link rel="apple-touch-icon" href="icon.svg" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%2313e7c3'/><line x1='16' y1='5' x2='16' y2='27' stroke='%23080808' stroke-width='3' stroke-linecap='round'/><path d='M21 9H13.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H10' stroke='%23080808' stroke-width='3' stroke-linecap='round' fill='none'/></svg>" />
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%2313e7c3'/><line x1='16' y1='5' x2='16' y2='27' stroke='%23080808' stroke-width='3' stroke-linecap='round'/><path d='M21 9H13.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H10' stroke='%23080808' stroke-width='3' stroke-linecap='round' fill='none'/></svg>" />
   <style>
     *,
     *::before,
@@ -33,6 +34,8 @@
       --border-bright: #2e2e2e;
       --accent: #13e7c3;
       --accent-dim: rgba(0, 229, 160, 0.10);
+      --danger: #f87171;
+      --danger-dim: rgba(248, 113, 113, 0.10);
       --text: #e2e8f0;
       --text-dim: #888888;
       --text-muted: #8d8d8d;
@@ -218,6 +221,10 @@
       transition: transform .3s ease;
     }
 
+    .kpi.negative::after {
+      background: var(--danger);
+    }
+
     .kpi:hover::after {
       transform: scaleX(1);
     }
@@ -240,6 +247,10 @@
 
     .kpi.accent .kpi-val {
       color: var(--accent);
+    }
+
+    .kpi.negative .kpi-val {
+      color: var(--danger);
     }
 
     .kpi-sub {
@@ -451,6 +462,54 @@
       border: 1px solid rgba(167, 139, 250, .28);
     }
 
+    .cat-youtube_music {
+      background: rgba(255, 71, 71, .13);
+      color: #ff7b7b;
+      border: 1px solid rgba(255, 71, 71, .28);
+    }
+
+    .cat-internet {
+      background: rgba(56, 189, 248, .13);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, .28);
+    }
+
+    .cat-mobile_data {
+      background: rgba(99, 102, 241, .13);
+      color: #818cf8;
+      border: 1px solid rgba(99, 102, 241, .28);
+    }
+
+    .cat-salud {
+      background: rgba(34, 197, 94, .13);
+      color: #4ade80;
+      border: 1px solid rgba(34, 197, 94, .28);
+    }
+
+    .cat-gym {
+      background: rgba(251, 191, 36, .13);
+      color: #fbbf24;
+      border: 1px solid rgba(251, 191, 36, .28);
+    }
+
+    .cat-credito_nu {
+      background: rgba(167, 139, 250, .13);
+      color: #c084fc;
+      border: 1px solid rgba(167, 139, 250, .28);
+    }
+
+    .cat-haircut {
+      background: rgba(244, 114, 182, .13);
+      color: #f472b6;
+      border: 1px solid rgba(244, 114, 182, .28);
+    }
+
+    .cat-bike_wash {
+      background: rgba(45, 212, 191, .13);
+      color: #2dd4bf;
+      border: 1px solid rgba(45, 212, 191, .28);
+    }
+
     .cat-default {
       background: rgba(100, 116, 139, .13);
       color: #94a3b8;
@@ -471,6 +530,38 @@
 
     .dot-chatbot_ia {
       background: #a78bfa;
+    }
+
+    .dot-youtube_music {
+      background: #ff7b7b;
+    }
+
+    .dot-internet {
+      background: #38bdf8;
+    }
+
+    .dot-mobile_data {
+      background: #818cf8;
+    }
+
+    .dot-salud {
+      background: #4ade80;
+    }
+
+    .dot-gym {
+      background: #fbbf24;
+    }
+
+    .dot-credito_nu {
+      background: #c084fc;
+    }
+
+    .dot-haircut {
+      background: #f472b6;
+    }
+
+    .dot-bike_wash {
+      background: #2dd4bf;
     }
 
     .dot-default {
@@ -513,11 +604,27 @@
     }
 
     /* ── SUMMARY GRID ───────────────────────────── */
+    .summary-section {
+      border-top: 1px solid var(--border);
+    }
+
+    .summary-section:first-child {
+      border-top: none;
+    }
+
+    .summary-subtitle {
+      padding: 12px 22px 0;
+      font-size: 9px;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
     .summary-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
       gap: 12px;
-      padding: 18px 22px;
+      padding: 12px 22px 18px;
     }
 
     .sum-card {
@@ -566,6 +673,47 @@
       to {
         opacity: 1;
       }
+    }
+
+    /* ── TABS ───────────────────────────────────── */
+    .tabs {
+      display: flex;
+      gap: 2px;
+      margin-bottom: 22px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tab-btn {
+      padding: 10px 22px;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--text-muted);
+      font-family: var(--font-display);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      cursor: pointer;
+      margin-bottom: -1px;
+      transition: color var(--tr), border-color var(--tr);
+    }
+
+    .tab-btn:hover {
+      color: var(--text-dim);
+    }
+
+    .tab-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    .panel-view {
+      display: none;
+    }
+
+    .panel-view.active {
+      display: block;
     }
 
     /* ── RESPONSIVE ─────────────────────────────── */
@@ -656,7 +804,11 @@
       .summary-grid {
         grid-template-columns: 1fr 1fr;
         gap: 10px;
-        padding: 14px;
+        padding: 10px 14px 14px;
+      }
+
+      .summary-subtitle {
+        padding: 10px 14px 0;
       }
 
       .sum-total {
@@ -721,73 +873,125 @@
 
     <!-- KPI cards -->
     <div class="kpi-grid">
+      <div class="kpi" id="kpiBalanceCard">
+        <div class="kpi-label">Balance neto</div>
+        <div class="kpi-val" id="kpiBalance">—</div>
+        <div class="kpi-sub">ingresos − gastos</div>
+      </div>
       <div class="kpi accent">
-        <div class="kpi-label">Total a cobrar</div>
+        <div class="kpi-label">Ingresos</div>
         <div class="kpi-val" id="kpiTotal">—</div>
-        <div class="kpi-sub">suma de cobros activos</div>
+        <div class="kpi-sub">total a cobrar</div>
       </div>
       <div class="kpi">
-        <div class="kpi-label">Cobros</div>
-        <div class="kpi-val" id="kpiCount">—</div>
-        <div class="kpi-sub">registros en hoja</div>
+        <div class="kpi-label">Gastos</div>
+        <div class="kpi-val" id="kpiExpenses">—</div>
+        <div class="kpi-sub">total pagado</div>
       </div>
       <div class="kpi">
         <div class="kpi-label">Personas</div>
         <div class="kpi-val" id="kpiPeople">—</div>
         <div class="kpi-sub">clientes únicos</div>
       </div>
-      <div class="kpi">
-        <div class="kpi-label">Categorías</div>
-        <div class="kpi-val" id="kpiCats">—</div>
-        <div class="kpi-sub">servicios distintos</div>
+    </div>
+
+    <!-- Tab bar -->
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="cobros" onclick="switchTab('cobros')">Cobros</button>
+      <button class="tab-btn" data-tab="pagos" onclick="switchTab('pagos')">Pagos</button>
+    </div>
+
+    <!-- ── VIEW: COBROS ── -->
+    <div class="panel-view active" id="view-cobros">
+      <div class="panel">
+        <div class="panel-head">
+          <span class="panel-title">Cobros</span>
+          <span class="row-count">
+            mostrando <b id="visibleCount">0</b> de <b id="totalCount">0</b>
+          </span>
+        </div>
+
+        <div class="filters">
+          <input class="filter-input" id="searchInput" type="text" placeholder="Buscar por nombre…"
+            oninput="applyFilters()" />
+          <select class="filter-select" id="filterCategory" onchange="applyFilters()">
+            <option value="">Todas las categorías</option>
+          </select>
+          <select class="filter-select" id="filterDate" onchange="applyFilters()">
+            <option value="">Todos los días</option>
+          </select>
+        </div>
+
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th onclick="sortBy('name')">Nombre <span class="sort-arrow" id="sa-name">↕</span></th>
+                <th onclick="sortBy('category')">Categoría <span class="sort-arrow" id="sa-category">↕</span></th>
+                <th onclick="sortBy('amount')">Monto <span class="sort-arrow" id="sa-amount">↕</span></th>
+                <th onclick="sortBy('date')">Día de cobro <span class="sort-arrow" id="sa-date">↕</span></th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+              <tr class="state-row">
+                <td colspan="4"><span class="spinner"></span>Cargando datos…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <span class="panel-title">Resumen por categoría</span>
+        </div>
+        <div class="summary-grid" id="summaryGrid"></div>
       </div>
     </div>
 
-    <!-- Main table panel -->
-    <div class="panel">
-      <div class="panel-head">
-        <span class="panel-title">Cobros</span>
-        <span class="row-count">
-          mostrando <b id="visibleCount">0</b> de <b id="totalCount">0</b>
-        </span>
+    <!-- ── VIEW: PAGOS ── -->
+    <div class="panel-view" id="view-pagos">
+      <div class="panel">
+        <div class="panel-head">
+          <span class="panel-title">Pagos</span>
+          <span class="row-count">
+            mostrando <b id="expVisibleCount">0</b> de <b id="expTotalCount">0</b>
+          </span>
+        </div>
+
+        <div class="filters">
+          <select class="filter-select" id="filterExpCategory" onchange="applyExpFilters()">
+            <option value="">Todas las categorías</option>
+          </select>
+          <select class="filter-select" id="filterExpDate" onchange="applyExpFilters()">
+            <option value="">Todos los días</option>
+          </select>
+        </div>
+
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th onclick="sortExpBy('category')">Categoría <span class="sort-arrow" id="esa-category">↕</span></th>
+                <th onclick="sortExpBy('amount')">Monto <span class="sort-arrow" id="esa-amount">↕</span></th>
+                <th onclick="sortExpBy('date')">Día <span class="sort-arrow" id="esa-date">↕</span></th>
+              </tr>
+            </thead>
+            <tbody id="expTableBody">
+              <tr class="state-row">
+                <td colspan="3"><span class="spinner"></span>Cargando datos…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <div class="filters">
-        <input class="filter-input" id="searchInput" type="text" placeholder="Buscar por nombre…"
-          oninput="applyFilters()" />
-        <select class="filter-select" id="filterCategory" onchange="applyFilters()">
-          <option value="">Todas las categorías</option>
-        </select>
-        <select class="filter-select" id="filterDate" onchange="applyFilters()">
-          <option value="">Todos los días</option>
-        </select>
+      <div class="panel">
+        <div class="panel-head">
+          <span class="panel-title">Resumen por categoría</span>
+        </div>
+        <div class="summary-grid" id="expSummaryGrid"></div>
       </div>
-
-      <div class="table-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th onclick="sortBy('name')">Nombre <span class="sort-arrow" id="sa-name">↕</span></th>
-              <th onclick="sortBy('category')">Categoría <span class="sort-arrow" id="sa-category">↕</span></th>
-              <th onclick="sortBy('amount')">Monto <span class="sort-arrow" id="sa-amount">↕</span></th>
-              <th onclick="sortBy('date')">Día de cobro <span class="sort-arrow" id="sa-date">↕</span></th>
-            </tr>
-          </thead>
-          <tbody id="tableBody">
-            <tr class="state-row">
-              <td colspan="4"><span class="spinner"></span>Cargando datos…</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Summary by category -->
-    <div class="panel" id="summaryPanel" style="animation-delay:.38s">
-      <div class="panel-head">
-        <span class="panel-title">Resumen por categoría</span>
-      </div>
-      <div class="summary-grid" id="summaryGrid"></div>
     </div>
 
   </main>
@@ -799,11 +1003,21 @@
       '2PACX-1vQ3ft5Mfo9oXwRGVD974mP6myIhR4KU-EA0mnKFNu6bjKBdIubZES8zKsUovNKoa6eJYAUrpURgm5uF' +
       '/pub?gid=0&single=true&output=csv';
 
+    const EXPENSES_URL =
+      'https://docs.google.com/spreadsheets/d/e/' +
+      '2PACX-1vQ3ft5Mfo9oXwRGVD974mP6myIhR4KU-EA0mnKFNu6bjKBdIubZES8zKsUovNKoa6eJYAUrpURgm5uF' +
+      '/pub?gid=1889966816&single=true&output=csv';
+
     /* ── STATE ──────────────────────────────────────────── */
     let allData = [];
     let filteredData = [];
     let sortCol = null;
     let sortDir = 'asc';
+
+    let allExpenses = [];
+    let filteredExpenses = [];
+    let sortExpCol = null;
+    let sortExpDir = 'asc';
 
     /* ── CATEGORY STYLE MAP ─────────────────────────────── */
     const CAT_STYLE = {
@@ -811,6 +1025,14 @@
       chatgpt: { badge: 'cat-chatgpt', dot: 'dot-chatgpt' },
       servidor_n8n: { badge: 'cat-servidor_n8n', dot: 'dot-servidor_n8n' },
       chatbot_ia: { badge: 'cat-chatbot_ia', dot: 'dot-chatbot_ia' },
+      youtube_music: { badge: 'cat-youtube_music', dot: 'dot-youtube_music' },
+      internet: { badge: 'cat-internet', dot: 'dot-internet' },
+      mobile_data: { badge: 'cat-mobile_data', dot: 'dot-mobile_data' },
+      salud: { badge: 'cat-salud', dot: 'dot-salud' },
+      gym: { badge: 'cat-gym', dot: 'dot-gym' },
+      credito_nu: { badge: 'cat-credito_nu', dot: 'dot-credito_nu' },
+      haircut: { badge: 'cat-haircut', dot: 'dot-haircut' },
+      bike_wash: { badge: 'cat-bike_wash', dot: 'dot-bike_wash' },
     };
 
     function catStyle(raw) {
@@ -820,7 +1042,6 @@
 
     /* ── HELPERS ────────────────────────────────────────── */
     function parseAmount(str) {
-      // "$21.000"  →  21000   (Colombian thousands-dot format)
       if (!str) return 0;
       return parseFloat(str.replace(/\$/g, '').replace(/\./g, '').replace(',', '.').trim()) || 0;
     }
@@ -840,7 +1061,7 @@
           headers.forEach((h, i) => { obj[h] = (cols[i] || '').trim(); });
           return obj;
         })
-        .filter(r => r.NAME);
+        .filter(r => Object.values(r).some(v => v));
     }
 
     function splitCsvLine(line) {
@@ -855,10 +1076,10 @@
     }
 
     /* ── CACHE ──────────────────────────────────────────── */
-    const CACHE_KEY = 'collecttrack_v1';
+    const CACHE_KEY = 'collecttrack_v2';
 
-    function saveCache(data) {
-      localStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() }));
+    function saveCache(income, expenses) {
+      localStorage.setItem(CACHE_KEY, JSON.stringify({ income, expenses, ts: Date.now() }));
     }
 
     function loadCache() {
@@ -870,7 +1091,7 @@
 
     function formatAgo(ts) {
       const m = Math.floor((Date.now() - ts) / 60000);
-      if (m < 1)  return 'hace un momento';
+      if (m < 1) return 'hace un momento';
       if (m < 60) return `hace ${m}m`;
       const h = Math.floor(m / 60);
       if (h < 24) return `hace ${h}h`;
@@ -892,56 +1113,88 @@
       // 1 — Render cache immediately if available
       const cached = loadCache();
       if (cached) {
-        allData = cached.data;
+        allData = cached.income || [];
+        allExpenses = cached.expenses || [];
         populateFilters();
         applyFilters();
+        populateExpFilters();
+        applyExpFilters();
         updateKPIs();
         renderSummary();
         setStatus('caché · ' + formatAgo(cached.ts), 'var(--text-muted)');
       } else {
         document.getElementById('tableBody').innerHTML =
           '<tr class="state-row"><td colspan="4"><span class="spinner"></span>Cargando datos…</td></tr>';
+        document.getElementById('expTableBody').innerHTML =
+          '<tr class="state-row"><td colspan="3"><span class="spinner"></span>Cargando datos…</td></tr>';
       }
 
-      // 2 — Fetch fresh data
+      // 2 — Fetch both sheets in parallel
+      const [incResult, expResult] = await Promise.allSettled([
+        fetch(CSV_URL),
+        fetch(EXPENSES_URL),
+      ]);
+
+      let incomeOk = false;
+      let expensesOk = false;
+
       try {
-        const res = await fetch(CSV_URL);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const text = await res.text();
+        if (incResult.status === 'fulfilled' && incResult.value.ok) {
+          const text = await incResult.value.text();
+          const rows = parseCsv(text);
+          allData = rows
+            .filter(r => r.NAME)
+            .map(r => ({
+              name: r.NAME || '',
+              rawAmount: r.AMOUNT || '',
+              amountNum: parseAmount(r.AMOUNT),
+              category: r.CATEGORY || '',
+              date: r.DATE || '',
+            }));
+          populateFilters();
+          applyFilters();
+          incomeOk = true;
+        }
+      } catch (e) { console.error('income:', e); }
 
-        const rows = parseCsv(text);
-        allData = rows.map(r => ({
-          name:      r.NAME     || '',
-          rawAmount: r.AMOUNT   || '',
-          amountNum: parseAmount(r.AMOUNT),
-          category:  r.CATEGORY || '',
-          date:      r.DATE     || '',
-        }));
+      try {
+        if (expResult.status === 'fulfilled' && expResult.value.ok) {
+          const text = await expResult.value.text();
+          const rows = parseCsv(text);
+          allExpenses = rows
+            .filter(r => r.CATEGORY || r.AMOUNT)
+            .map(r => ({
+              rawAmount: r.AMOUNT || '',
+              amountNum: parseAmount(r.AMOUNT),
+              category: r.CATEGORY || '',
+              date: r.DATE || '',
+            }));
+          populateExpFilters();
+          applyExpFilters();
+          expensesOk = true;
+        }
+      } catch (e) { console.error('expenses:', e); }
 
-        saveCache(allData);
-        populateFilters();
-        applyFilters();
+      if (incomeOk || expensesOk) {
+        saveCache(allData, allExpenses);
         updateKPIs();
         renderSummary();
-
         const t = new Date();
         setStatus('actualizado ' + t.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }));
-
-      } catch (err) {
-        console.error(err);
-        if (allData.length) {
-          setStatus('sin conexión', '#f87171');
-        } else {
-          document.getElementById('errorBar').style.display = 'block';
-          document.getElementById('tableBody').innerHTML =
-            '<tr class="state-row"><td colspan="4">No se pudieron cargar los datos.</td></tr>';
-        }
-      } finally {
-        btn.classList.remove('loading');
+      } else if (!cached) {
+        document.getElementById('errorBar').style.display = 'block';
+        document.getElementById('tableBody').innerHTML =
+          '<tr class="state-row"><td colspan="4">No se pudieron cargar los datos.</td></tr>';
+        document.getElementById('expTableBody').innerHTML =
+          '<tr class="state-row"><td colspan="3">No se pudieron cargar los datos.</td></tr>';
+      } else {
+        setStatus('sin conexión', '#f87171');
       }
+
+      btn.classList.remove('loading');
     }
 
-    /* ── FILTERS ────────────────────────────────────────── */
+    /* ── INCOME FILTERS ─────────────────────────────────── */
     function populateFilters() {
       const cats = [...new Set(allData.map(r => r.category).filter(Boolean))].sort();
       const dates = [...new Set(allData.map(r => r.date).filter(Boolean))].sort((a, b) => +a - +b);
@@ -971,20 +1224,25 @@
       renderTable();
     }
 
-    /* ── SORT ───────────────────────────────────────────── */
+    /* ── INCOME SORT ────────────────────────────────────── */
     const SORT_COLS = ['name', 'category', 'amount', 'date'];
 
     function sortBy(col) {
       sortDir = (sortCol === col && sortDir === 'asc') ? 'desc' : 'asc';
       sortCol = col;
 
+      document.querySelectorAll('#tableBody').forEach(() => { });
       document.querySelectorAll('thead th').forEach((th, i) => {
-        th.classList.toggle('active', SORT_COLS[i] === col);
+        if (!th.closest('#expensesPanel')) {
+          th.classList.toggle('active', SORT_COLS[i] === col);
+        }
       });
       SORT_COLS.forEach(c => {
-        document.getElementById(`sa-${c}`).textContent = '↕';
+        const el = document.getElementById(`sa-${c}`);
+        if (el) el.textContent = '↕';
       });
-      document.getElementById(`sa-${col}`).textContent = sortDir === 'asc' ? '↑' : '↓';
+      const arrow = document.getElementById(`sa-${col}`);
+      if (arrow) arrow.textContent = sortDir === 'asc' ? '↑' : '↓';
 
       sortFiltered();
       renderTable();
@@ -1006,7 +1264,7 @@
       });
     }
 
-    /* ── RENDER TABLE ───────────────────────────────────── */
+    /* ── INCOME RENDER ──────────────────────────────────── */
     function renderTable() {
       document.getElementById('visibleCount').textContent = filteredData.length;
       document.getElementById('totalCount').textContent = allData.length;
@@ -1040,31 +1298,132 @@
       }).join('');
     }
 
+    /* ── EXPENSES FILTERS ───────────────────────────────── */
+    function populateExpFilters() {
+      const cats = [...new Set(allExpenses.map(r => r.category).filter(Boolean))].sort();
+      const dates = [...new Set(allExpenses.map(r => r.date).filter(Boolean))].sort((a, b) => +a - +b);
+
+      document.getElementById('filterExpCategory').innerHTML =
+        '<option value="">Todas las categorías</option>' +
+        cats.map(c => `<option value="${c}">${c}</option>`).join('');
+
+      document.getElementById('filterExpDate').innerHTML =
+        '<option value="">Todos los días</option>' +
+        dates.map(d => `<option value="${d}">Día ${d}</option>`).join('');
+    }
+
+    function applyExpFilters() {
+      const cat = document.getElementById('filterExpCategory').value;
+      const date = document.getElementById('filterExpDate').value;
+
+      filteredExpenses = allExpenses.filter(r => {
+        if (cat && r.category !== cat) return false;
+        if (date && r.date !== date) return false;
+        return true;
+      });
+
+      if (sortExpCol) sortExpFiltered();
+      renderExpTable();
+    }
+
+    /* ── EXPENSES SORT ──────────────────────────────────── */
+    const SORT_EXP_COLS = ['category', 'amount', 'date'];
+
+    function sortExpBy(col) {
+      sortExpDir = (sortExpCol === col && sortExpDir === 'asc') ? 'desc' : 'asc';
+      sortExpCol = col;
+
+      SORT_EXP_COLS.forEach((c, i) => {
+        const arrow = document.getElementById(`esa-${c}`);
+        if (arrow) arrow.textContent = c === col ? (sortExpDir === 'asc' ? '↑' : '↓') : '↕';
+        const th = arrow && arrow.closest('th');
+        if (th) th.classList.toggle('active', c === col);
+      });
+
+      sortExpFiltered();
+      renderExpTable();
+    }
+
+    function sortExpFiltered() {
+      filteredExpenses.sort((a, b) => {
+        let va, vb;
+        switch (sortExpCol) {
+          case 'amount': va = a.amountNum; vb = b.amountNum; break;
+          case 'date': va = +a.date || 0; vb = +b.date || 0; break;
+          case 'category': va = a.category.toLowerCase(); vb = b.category.toLowerCase(); break;
+          default: return 0;
+        }
+        if (va < vb) return sortExpDir === 'asc' ? -1 : 1;
+        if (va > vb) return sortExpDir === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    /* ── EXPENSES RENDER ────────────────────────────────── */
+    function renderExpTable() {
+      document.getElementById('expVisibleCount').textContent = filteredExpenses.length;
+      document.getElementById('expTotalCount').textContent = allExpenses.length;
+
+      const tbody = document.getElementById('expTableBody');
+
+      if (!filteredExpenses.length) {
+        tbody.innerHTML = allExpenses.length
+          ? '<tr class="state-row"><td colspan="3">No se encontraron pagos con esos filtros.</td></tr>'
+          : '<tr class="state-row"><td colspan="3">No hay gastos registrados.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = filteredExpenses.map((r, i) => {
+        const s = catStyle(r.category);
+        const catLabel = r.category || null;
+
+        const catCell = catLabel
+          ? `<span class="badge ${s.badge}"><span class="dot ${s.dot}"></span>${catLabel}</span>`
+          : `<span style="color:var(--text-muted)">—</span>`;
+
+        const dateCell = r.date
+          ? `<span class="day-chip">${r.date}</span>`
+          : `<span style="color:var(--text-muted)">—</span>`;
+
+        return `<tr style="animation-delay:${i * 35}ms">
+      <td>${catCell}</td>
+      <td class="td-amount">${r.amountNum ? fmtAmount(r.amountNum) : '—'}</td>
+      <td>${dateCell}</td>
+    </tr>`;
+      }).join('');
+    }
+
     /* ── KPI CARDS ──────────────────────────────────────── */
     function updateKPIs() {
-      const total = allData.reduce((s, r) => s + r.amountNum, 0);
+      const totalIncome = allData.reduce((s, r) => s + r.amountNum, 0);
+      const totalExpenses = allExpenses.reduce((s, r) => s + r.amountNum, 0);
+      const balance = totalIncome - totalExpenses;
       const people = new Set(allData.map(r => r.name.trim().toLowerCase())).size;
-      const cats = new Set(allData.map(r => r.category).filter(Boolean)).size;
 
-      document.getElementById('kpiTotal').textContent = fmtAmount(total);
-      document.getElementById('kpiCount').textContent = allData.length;
+      document.getElementById('kpiBalance').textContent = fmtAmount(Math.abs(balance));
+      document.getElementById('kpiTotal').textContent = fmtAmount(totalIncome);
+      document.getElementById('kpiExpenses').textContent = fmtAmount(totalExpenses);
       document.getElementById('kpiPeople').textContent = people;
-      document.getElementById('kpiCats').textContent = cats;
+
+      const balCard = document.getElementById('kpiBalanceCard');
+      balCard.classList.toggle('accent', balance >= 0);
+      balCard.classList.toggle('negative', balance < 0);
     }
 
     /* ── SUMMARY ────────────────────────────────────────── */
     function renderSummary() {
-      const map = {};
+      // Income by category
+      const incMap = {};
       allData.forEach(r => {
         const key = r.category || 'Sin categoría';
-        if (!map[key]) map[key] = { total: 0, count: 0, people: new Set() };
-        map[key].total += r.amountNum;
-        map[key].count++;
-        map[key].people.add(r.name.trim().toLowerCase());
+        if (!incMap[key]) incMap[key] = { total: 0, count: 0, people: new Set() };
+        incMap[key].total += r.amountNum;
+        incMap[key].count++;
+        incMap[key].people.add(r.name.trim().toLowerCase());
       });
 
       document.getElementById('summaryGrid').innerHTML =
-        Object.entries(map)
+        Object.entries(incMap)
           .sort(([, a], [, b]) => b.total - a.total)
           .map(([cat, d]) => {
             const s = catStyle(cat === 'Sin categoría' ? null : cat);
@@ -1079,6 +1438,40 @@
           <div class="sum-meta">${p} persona${p !== 1 ? 's' : ''} · ${d.count} cobro${d.count !== 1 ? 's' : ''}</div>
         </div>`;
           }).join('');
+
+      // Expenses by category
+      const expMap = {};
+      allExpenses.forEach(r => {
+        const key = r.category || 'Sin categoría';
+        if (!expMap[key]) expMap[key] = { total: 0, count: 0 };
+        expMap[key].total += r.amountNum;
+        expMap[key].count++;
+      });
+
+      document.getElementById('expSummaryGrid').innerHTML =
+        Object.entries(expMap)
+          .sort(([, a], [, b]) => b.total - a.total)
+          .map(([cat, d]) => {
+            const s = catStyle(cat === 'Sin categoría' ? null : cat);
+            const lbl = cat.replace(/_/g, ' ');
+            return `<div class="sum-card">
+          <div class="sum-head">
+            <span class="dot ${s.dot}" style="width:8px;height:8px;flex-shrink:0"></span>
+            <span class="sum-name">${lbl}</span>
+          </div>
+          <div class="sum-total">${fmtAmount(d.total)}</div>
+          <div class="sum-meta">${d.count} pago${d.count !== 1 ? 's' : ''}</div>
+        </div>`;
+          }).join('');
+    }
+
+    /* ── TABS ───────────────────────────────────────────── */
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tab);
+      });
+      document.getElementById('view-cobros').classList.toggle('active', tab === 'cobros');
+      document.getElementById('view-pagos').classList.toggle('active', tab === 'pagos');
     }
 
     /* ── SERVICE WORKER ─────────────────────────────────── */

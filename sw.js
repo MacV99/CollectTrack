@@ -1,4 +1,4 @@
-const CACHE = 'collecttrack-v1';
+const CACHE = 'collecttrack-v2';
 const STATIC = ['/', './index.html', './manifest.json', './icon.svg'];
 
 // Install: pre-cache static files
