@@ -492,6 +492,61 @@
     .btn-save:hover    { opacity: .85; }
     .btn-save:disabled { opacity: .4; cursor: not-allowed; }
 
+    /* ── CONFIRM MODAL ──────────────────────────── */
+    .confirm-modal {
+      display: none; position: fixed;
+      top: 50%; left: 50%; transform: translate(-50%, -50%);
+      z-index: 202;
+      width: min(360px, calc(100vw - 32px));
+      background: #141414;
+      border: 1px solid var(--border-bright);
+      border-radius: 14px;
+      flex-direction: column;
+      box-shadow: 0 24px 64px rgba(0,0,0,.7);
+      padding: 28px 28px 22px;
+      gap: 20px;
+    }
+
+    .confirm-icon {
+      width: 44px; height: 44px;
+      background: var(--danger-dim);
+      border: 1px solid rgba(248,113,113,.3);
+      border-radius: 50%;
+      display: grid; place-items: center;
+      margin: 0 auto 4px;
+    }
+
+    .confirm-title {
+      font-family: var(--font-display); font-weight: 700;
+      font-size: 15px; color: var(--text);
+      text-align: center;
+    }
+
+    .confirm-msg {
+      font-size: 12px; color: var(--text-muted);
+      text-align: center; line-height: 1.6;
+      margin-top: -10px;
+    }
+
+    .confirm-actions {
+      display: flex; gap: 10px;
+    }
+
+    .confirm-actions .btn-cancel { flex: 1; text-align: center; }
+
+    .btn-delete {
+      flex: 1; padding: 9px 22px;
+      background: var(--danger-dim);
+      border: 1px solid rgba(248,113,113,.4);
+      border-radius: var(--radius);
+      color: var(--danger); font-family: var(--font-mono);
+      font-size: 12px; font-weight: 700; cursor: pointer;
+      transition: all var(--tr);
+      text-align: center;
+    }
+
+    .btn-delete:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+
     /* ── NOTIF PILL ─────────────────────────────── */
     #notif-pill {
       position: fixed; bottom: 1.5rem; right: 1.5rem;
@@ -634,9 +689,9 @@
             <thead>
               <tr>
                 <th onclick="sortBy('name')">Nombre <span class="sort-arrow" id="sa-name">↕</span></th>
-                <th onclick="sortBy('category')">Categoría <span class="sort-arrow" id="sa-category">↕</span></th>
+                <th onclick="sortBy('date')">Día <span class="sort-arrow" id="sa-date">↕</span></th>
                 <th onclick="sortBy('amount')">Monto <span class="sort-arrow" id="sa-amount">↕</span></th>
-                <th onclick="sortBy('date')">Día de cobro <span class="sort-arrow" id="sa-date">↕</span></th>
+                <th onclick="sortBy('category')">Categoría <span class="sort-arrow" id="sa-category">↕</span></th>
                 <th class="no-sort"></th>
               </tr>
             </thead>
@@ -748,6 +803,22 @@
   </div>
 
   <div id="notif-pill"></div>
+
+  <!-- ── CONFIRM MODAL ────────────────────────────────── -->
+  <div class="modal-backdrop" id="confirmBackdrop" onclick="closeConfirm()"></div>
+  <div class="confirm-modal" id="confirmModal">
+    <div class="confirm-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+      </svg>
+    </div>
+    <div class="confirm-title">Eliminar fila</div>
+    <div class="confirm-msg" id="confirmMsg">¿Seguro que quieres eliminar este registro?<br>Esta acción no se puede deshacer.</div>
+    <div class="confirm-actions">
+      <button class="btn-cancel" onclick="closeConfirm()">Cancelar</button>
+      <button class="btn-delete" id="btnConfirmDelete" onclick="confirmDeleteExecute()">Eliminar</button>
+    </div>
+  </div>
 
   <script>
     /* ── CONFIG ─────────────────────────────────────────── */
@@ -1107,9 +1178,9 @@
 
         return `<tr style="animation-delay:${i * 35}ms">
           <td class="td-name">${r.name}</td>
-          <td>${catCell}</td>
-          <td class="td-amount">${r.rawAmount || '—'}</td>
           <td>${dateCell}</td>
+          <td class="td-amount">${r.rawAmount || '—'}</td>
+          <td>${catCell}</td>
           <td class="td-actions">
             <button class="btn-row edit" title="Editar"   onclick="openEditModal('cobros',${i})">✏</button>
             <button class="btn-row del"  title="Eliminar" onclick="deleteRow('cobros',${i})">✕</button>
@@ -1346,7 +1417,7 @@
       document.getElementById('modal').style.display         = 'none';
     }
 
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeConfirm(); } });
 
     async function submitModal() {
       const name     = document.getElementById('fName').value.trim();
@@ -1411,9 +1482,31 @@
     }
 
     /* ── DELETE ─────────────────────────────────────────── */
+    let _pendingDelete = null; // { sheet, index }
+
     function deleteRow(sheet, index) {
       if (!API_URL) { showNotification('Configura API_URL primero', 'err'); return; }
-      if (!confirm('¿Eliminar esta fila?')) return;
+      const r = sheet === 'cobros' ? filteredData[index] : filteredExpenses[index];
+      const label = sheet === 'cobros'
+        ? (r.name || 'este cobro')
+        : (r.category || 'este pago');
+      document.getElementById('confirmMsg').innerHTML =
+        `¿Eliminar <b style="color:var(--text)">${label}</b>?<br><span style="color:var(--text-muted);font-size:11px">Esta acción no se puede deshacer.</span>`;
+      _pendingDelete = { sheet, index };
+      document.getElementById('confirmBackdrop').style.display = 'block';
+      document.getElementById('confirmModal').style.display    = 'flex';
+    }
+
+    function closeConfirm() {
+      document.getElementById('confirmBackdrop').style.display = 'none';
+      document.getElementById('confirmModal').style.display    = 'none';
+      _pendingDelete = null;
+    }
+
+    function confirmDeleteExecute() {
+      if (!_pendingDelete) return;
+      const { sheet, index } = _pendingDelete;
+      closeConfirm();
 
       const arr    = sheet === 'cobros' ? filteredData : filteredExpenses;
       const r      = arr[index];
