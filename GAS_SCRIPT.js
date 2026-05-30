@@ -99,6 +99,15 @@ function doPost(e) {
       sheet.deleteRow(_row);
     }
 
+    // ── SET PAID ─────────────────────────────────────────────────────────────
+    // Marca el periodo ("YYYY-MM") en que se pagó la fila, o '' para limpiar.
+    // La columna PAID se localiza por encabezado; si no existe, se crea.
+    if (action === 'setPaid') {
+      if (!_row) throw new Error('Falta _row para setPaid');
+      const col = getOrCreatePaidCol(sheet);
+      sheet.getRange(_row, col).setValue(payload.PAID || '');
+    }
+
     return ContentService
       .createTextOutput(JSON.stringify({ ok: true }))
       .setMimeType(ContentService.MimeType.JSON);
@@ -108,4 +117,16 @@ function doPost(e) {
       .createTextOutput(JSON.stringify({ ok: false, error: err.message }))
       .setMimeType(ContentService.MimeType.JSON);
   }
+}
+
+// ── Localiza la columna "PAID" por encabezado; la crea al final si falta ──────
+function getOrCreatePaidCol(sheet) {
+  const lastCol = sheet.getLastColumn();
+  const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0]
+    .map(h => String(h).toUpperCase().trim());
+  const idx = headers.indexOf('PAID');
+  if (idx !== -1) return idx + 1;        // 1-based
+  const col = lastCol + 1;
+  sheet.getRange(1, col).setValue('PAID');
+  return col;
 }

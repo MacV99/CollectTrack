@@ -335,6 +335,26 @@
       border-radius: 6px; font-size: 12px; color: var(--text-dim);
     }
 
+    /* ── PAY STATUS ─────────────────────────────── */
+    .pay-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 100px;
+      font-size: 10px; font-weight: 600;
+      letter-spacing: .3px; white-space: nowrap;
+    }
+
+    .pay-badge.paid    { background: rgba(34,197,94,.13);  color: #4ade80; border: 1px solid rgba(34,197,94,.30); }
+    .pay-badge.pending { background: rgba(251,191,36,.12); color: #fbbf24; border: 1px solid rgba(251,191,36,.28); }
+    .pay-badge.overdue { background: rgba(248,113,113,.13);color: #f87171; border: 1px solid rgba(248,113,113,.32); }
+
+    .pay-badge .dot { width: 7px; height: 7px; }
+    .pay-badge.overdue .dot { animation: pulse 1.3s ease-in-out infinite; }
+
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+
+    .btn-row.check:hover { border-color: #4ade80; color: #4ade80; background: rgba(34,197,94,.10); }
+    .btn-row.check.on    { border-color: #4ade80; color: #4ade80; background: rgba(34,197,94,.14); }
+
     /* ── EMPTY / LOADING ────────────────────────── */
     .state-row td {
       padding: 56px 22px; text-align: center;
@@ -682,6 +702,12 @@
           <select class="filter-select" id="filterDate" onchange="applyFilters()">
             <option value="">Todos los días</option>
           </select>
+          <select class="filter-select" id="filterStatus" onchange="applyFilters()">
+            <option value="">Todos los estados</option>
+            <option value="paid">Al día</option>
+            <option value="pending">Pendientes</option>
+            <option value="overdue">Atrasados</option>
+          </select>
         </div>
 
         <div class="table-scroll">
@@ -692,12 +718,13 @@
                 <th onclick="sortBy('date')">Día <span class="sort-arrow" id="sa-date">↕</span></th>
                 <th onclick="sortBy('amount')">Monto <span class="sort-arrow" id="sa-amount">↕</span></th>
                 <th onclick="sortBy('category')">Categoría <span class="sort-arrow" id="sa-category">↕</span></th>
+                <th class="no-sort">Estado</th>
                 <th class="no-sort"></th>
               </tr>
             </thead>
             <tbody id="tableBody">
               <tr class="state-row">
-                <td colspan="5"><span class="spinner"></span>Cargando datos…</td>
+                <td colspan="6"><span class="spinner"></span>Cargando datos…</td>
               </tr>
             </tbody>
           </table>
@@ -738,6 +765,12 @@
           <select class="filter-select" id="filterExpDate" onchange="applyExpFilters()">
             <option value="">Todos los días</option>
           </select>
+          <select class="filter-select" id="filterExpStatus" onchange="applyExpFilters()">
+            <option value="">Todos los estados</option>
+            <option value="paid">Al día</option>
+            <option value="pending">Pendientes</option>
+            <option value="overdue">Atrasados</option>
+          </select>
         </div>
 
         <div class="table-scroll">
@@ -747,12 +780,13 @@
                 <th onclick="sortExpBy('category')">Categoría <span class="sort-arrow" id="esa-category">↕</span></th>
                 <th onclick="sortExpBy('amount')">Monto <span class="sort-arrow" id="esa-amount">↕</span></th>
                 <th onclick="sortExpBy('date')">Día <span class="sort-arrow" id="esa-date">↕</span></th>
+                <th class="no-sort">Estado</th>
                 <th class="no-sort"></th>
               </tr>
             </thead>
             <tbody id="expTableBody">
               <tr class="state-row">
-                <td colspan="4"><span class="spinner"></span>Cargando datos…</td>
+                <td colspan="5"><span class="spinner"></span>Cargando datos…</td>
               </tr>
             </tbody>
           </table>
@@ -887,6 +921,39 @@
       return '$' + n.toLocaleString('es-CO');
     }
 
+    /* ── PAY STATUS ─────────────────────────────────────── */
+    // Periodo actual "YYYY-MM". Un registro está "al día" si su PAID == periodo
+    // actual. Al cambiar de mes el PAID guardado deja de coincidir → vuelve a
+    // pendiente solo (reinicio automático), conservando el último mes pagado.
+    function currentPeriod() {
+      const d = new Date();
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    }
+
+    function payStatus(r) {
+      if (r.paid && r.paid === currentPeriod()) return 'paid';
+      const dueDay = parseInt(r.date, 10);
+      const today  = new Date().getDate();
+      if (dueDay && today > dueDay) return 'overdue';
+      return 'pending';
+    }
+
+    const PAY_META = {
+      paid:    { label: 'Al día',    dot: '#4ade80' },
+      pending: { label: 'Pendiente', dot: '#fbbf24' },
+      overdue: { label: 'Atrasado',  dot: '#f87171' },
+    };
+
+    function payStatusCell(r) {
+      const st = payStatus(r), m = PAY_META[st];
+      return `<span class="pay-badge ${st}"><span class="dot" style="background:${m.dot}"></span>${m.label}</span>`;
+    }
+
+    function payCheckBtn(sheet, i, r) {
+      const on = payStatus(r) === 'paid';
+      return `<button class="btn-row check ${on ? 'on' : ''}" title="${on ? 'Marcar pendiente' : 'Marcar pagado'}" onclick="togglePaid('${sheet}',${i})">✓</button>`;
+    }
+
     function mapIncomeRow(r) {
       const amt = parseAmount(r['AMOUNT']);
       return {
@@ -896,6 +963,7 @@
         amountNum: amt,
         rawAmount: amt ? fmtAmount(amt) : '',
         date:      String(r['DATE']     || '').trim(),
+        paid:      String(r['PAID']     || '').trim(),
       };
     }
 
@@ -907,6 +975,7 @@
         amountNum: amt,
         rawAmount: amt ? fmtAmount(amt) : '',
         date:      String(r['DATE']     || '').trim(),
+        paid:      String(r['PAID']     || '').trim(),
       };
     }
 
@@ -1015,9 +1084,9 @@
         setStatus('caché · ' + formatAgo(cached.ts), 'var(--text-muted)');
       } else {
         document.getElementById('tableBody').innerHTML =
-          '<tr class="state-row"><td colspan="5"><span class="spinner"></span>Cargando datos…</td></tr>';
+          '<tr class="state-row"><td colspan="6"><span class="spinner"></span>Cargando datos…</td></tr>';
         document.getElementById('expTableBody').innerHTML =
-          '<tr class="state-row"><td colspan="4"><span class="spinner"></span>Cargando datos…</td></tr>';
+          '<tr class="state-row"><td colspan="5"><span class="spinner"></span>Cargando datos…</td></tr>';
       }
 
       let incomeOk = false, expensesOk = false;
@@ -1071,9 +1140,9 @@
       } else if (!cached) {
         document.getElementById('errorBar').style.display = 'block';
         document.getElementById('tableBody').innerHTML =
-          '<tr class="state-row"><td colspan="5">No se pudieron cargar los datos.</td></tr>';
+          '<tr class="state-row"><td colspan="6">No se pudieron cargar los datos.</td></tr>';
         document.getElementById('expTableBody').innerHTML =
-          '<tr class="state-row"><td colspan="4">No se pudieron cargar los datos.</td></tr>';
+          '<tr class="state-row"><td colspan="5">No se pudieron cargar los datos.</td></tr>';
       } else {
         setStatus('sin conexión', '#f87171');
       }
@@ -1108,11 +1177,13 @@
       const search = document.getElementById('searchInput').value.toLowerCase().trim();
       const cat    = document.getElementById('filterCategory').value;
       const date   = document.getElementById('filterDate').value;
+      const status = document.getElementById('filterStatus').value;
 
       filteredData = allData.filter(r => {
         if (search && !r.name.toLowerCase().includes(search)) return false;
         if (cat  && r.category !== cat)  return false;
         if (date && r.date !== date)     return false;
+        if (status && payStatus(r) !== status) return false;
         return true;
       });
 
@@ -1162,7 +1233,7 @@
       const tbody = document.getElementById('tableBody');
 
       if (!filteredData.length) {
-        tbody.innerHTML = '<tr class="state-row"><td colspan="5">No se encontraron cobros con esos filtros.</td></tr>';
+        tbody.innerHTML = '<tr class="state-row"><td colspan="6">No se encontraron cobros con esos filtros.</td></tr>';
         return;
       }
 
@@ -1181,7 +1252,9 @@
           <td>${dateCell}</td>
           <td class="td-amount">${r.rawAmount || '—'}</td>
           <td>${catCell}</td>
+          <td>${payStatusCell(r)}</td>
           <td class="td-actions">
+            ${payCheckBtn('cobros', i, r)}
             <button class="btn-row edit" title="Editar"   onclick="openEditModal('cobros',${i})">✏</button>
             <button class="btn-row del"  title="Eliminar" onclick="deleteRow('cobros',${i})">✕</button>
           </td>
@@ -1204,12 +1277,14 @@
     }
 
     function applyExpFilters() {
-      const cat  = document.getElementById('filterExpCategory').value;
-      const date = document.getElementById('filterExpDate').value;
+      const cat    = document.getElementById('filterExpCategory').value;
+      const date   = document.getElementById('filterExpDate').value;
+      const status = document.getElementById('filterExpStatus').value;
 
       filteredExpenses = allExpenses.filter(r => {
         if (cat  && r.category !== cat)  return false;
         if (date && r.date !== date)     return false;
+        if (status && payStatus(r) !== status) return false;
         return true;
       });
 
@@ -1259,8 +1334,8 @@
 
       if (!filteredExpenses.length) {
         tbody.innerHTML = allExpenses.length
-          ? '<tr class="state-row"><td colspan="4">No se encontraron pagos con esos filtros.</td></tr>'
-          : '<tr class="state-row"><td colspan="4">No hay gastos registrados.</td></tr>';
+          ? '<tr class="state-row"><td colspan="5">No se encontraron pagos con esos filtros.</td></tr>'
+          : '<tr class="state-row"><td colspan="5">No hay gastos registrados.</td></tr>';
         return;
       }
 
@@ -1277,7 +1352,9 @@
           <td>${catCell}</td>
           <td class="td-amount">${r.amountNum ? fmtAmount(r.amountNum) : '—'}</td>
           <td>${dateCell}</td>
+          <td>${payStatusCell(r)}</td>
           <td class="td-actions">
+            ${payCheckBtn('pagos', i, r)}
             <button class="btn-row edit" title="Editar"   onclick="openEditModal('pagos',${i})">✏</button>
             <button class="btn-row del"  title="Eliminar" onclick="deleteRow('pagos',${i})">✕</button>
           </td>
@@ -1435,8 +1512,8 @@
       if (modalIndex === null) {
         // ── CREATE ───────────────────────────────────────
         const newItem = modalSheet === 'cobros'
-          ? { _row: null, name, category, amountNum: amount, rawAmount: fmtAmount(amount), date }
-          : { _row: null, category, amountNum: amount, rawAmount: fmtAmount(amount), date };
+          ? { _row: null, name, category, amountNum: amount, rawAmount: fmtAmount(amount), date, paid: '' }
+          : { _row: null, category, amountNum: amount, rawAmount: fmtAmount(amount), date, paid: '' };
 
         if (modalSheet === 'cobros') allData.push(newItem);
         else                          allExpenses.push(newItem);
@@ -1520,6 +1597,31 @@
 
       postData({ action: 'delete', sheet, _row: rowNum })
         .then(() => showNotification('Eliminado ✓'))
+        .catch(err => { showNotification('Error: ' + err.message, 'err'); loadData(); });
+    }
+
+    /* ── TOGGLE PAID ────────────────────────────────────── */
+    // Marca / desmarca un registro como pagado en el periodo actual.
+    // Optimista: actualiza local + caché, sincroniza PAID en la hoja vía GAS.
+    function togglePaid(sheet, index) {
+      if (!API_URL) { showNotification('Configura API_URL primero', 'err'); return; }
+
+      const arr    = sheet === 'cobros' ? filteredData : filteredExpenses;
+      const r      = arr[index];
+      if (!r) return;
+      if (!r._row) { showNotification('Actualiza antes de marcar', 'err'); return; }
+
+      const allArr = sheet === 'cobros' ? allData : allExpenses;
+      const allIdx = allArr.indexOf(r);
+      const period = currentPeriod();
+      const newVal = (r.paid === period) ? '' : period;  // toggle
+
+      allArr[allIdx] = { ...r, paid: newVal };
+      saveCache(allData, allExpenses);
+      refreshAll();
+
+      postData({ action: 'setPaid', sheet, _row: r._row, PAID: newVal })
+        .then(() => showNotification(newVal ? 'Marcado al día ✓' : 'Marcado pendiente'))
         .catch(err => { showNotification('Error: ' + err.message, 'err'); loadData(); });
     }
 
