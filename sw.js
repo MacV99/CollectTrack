@@ -1,4 +1,4 @@
-const CACHE = 'collecttrack-v3';
+const CACHE = 'collecttrack-v4';
 const STATIC = ['./manifest.json', './icon.svg'];
 
 // Install: pre-cache solo assets estáticos (NO index.html)

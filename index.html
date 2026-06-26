@@ -155,8 +155,10 @@
     }
 
     .kpi-val {
-      font-family: var(--font-display); font-size: 30px;
+      font-family: var(--font-display); font-size: 23px;
       font-weight: 700; line-height: 1; color: var(--text);
+      letter-spacing: -.5px; font-variant-numeric: tabular-nums;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
 
     .kpi.accent   .kpi-val { color: var(--accent); }
@@ -774,6 +776,99 @@
     .audit-delete { background: rgba(248,113,113,.13); color: #f87171; border: 1px solid rgba(248,113,113,.28); }
 
     .form-control-textarea { resize: vertical; min-height: 72px; }
+
+    /* ── MACV SUB-TABS (Cobros / Pagos) ──────────────── */
+    .macv-subtabs {
+      display: flex; gap: 2px; margin-bottom: 22px;
+      border-bottom: 1px solid var(--border);
+    }
+    .macv-subtab-btn {
+      padding: 10px 22px; background: none; border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--text-muted); font-family: var(--font-display);
+      font-size: 11px; font-weight: 600; letter-spacing: 1px;
+      text-transform: uppercase; cursor: pointer; margin-bottom: -1px;
+      transition: color var(--tr), border-color var(--tr);
+    }
+    .macv-subtab-btn:hover  { color: var(--text-dim); }
+    .macv-subtab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .macv-subview        { display: none; }
+    .macv-subview.active { display: block; }
+
+    /* ── CREATABLE COMBO (etiquetas reutilizables) ───── */
+    .combo { position: relative; }
+    .combo-pop {
+      position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+      background: var(--surface-2); border: 1px solid var(--border-bright);
+      border-radius: 10px; box-shadow: 0 14px 34px rgba(0, 0, 0, .5);
+      max-height: 220px; overflow-y: auto; padding: 5px; z-index: 210;
+      display: none;
+    }
+    .combo-pop.open { display: block; animation: fadeIn .12s ease; }
+    .combo-option, .combo-create, .combo-empty {
+      padding: 9px 11px; border-radius: 7px; font-size: 13px;
+      color: var(--text-dim); cursor: pointer;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      transition: background var(--tr), color var(--tr);
+    }
+    .combo-option:hover, .combo-option.active { background: rgba(255, 255, 255, .05); color: var(--text); }
+    .combo-create { color: var(--accent); display: flex; align-items: center; gap: 2px; }
+    .combo-create b { font-weight: 700; }
+    .combo-create:hover, .combo-create.active { background: var(--accent-dim); }
+    .combo-empty { color: var(--text-muted); cursor: default; }
+    .combo { width: 100%; }
+    .combo .form-control { width: 100%; }
+
+    /* ── SEGMENTED TOGGLE (tipo / cuenta) ────────────── */
+    .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .seg-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+      padding: 10px 12px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--text-dim);
+      font-family: var(--font-mono); font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all var(--tr);
+    }
+    .seg-btn:hover { border-color: var(--border-bright); color: var(--text); }
+    .seg-btn .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .seg-btn[data-val="ingreso"].active { color: #4ade80; border-color: rgba(74, 222, 128, .5);  background: rgba(74, 222, 128, .12); }
+    .seg-btn[data-val="egreso"].active  { color: #f87171; border-color: rgba(248, 113, 113, .5); background: rgba(248, 113, 113, .12); }
+    .seg-btn[data-val="nu"].active      { color: #a78bfa; border-color: rgba(167, 139, 250, .5); background: rgba(167, 139, 250, .12); }
+    .seg-btn[data-val="nequi"].active   { color: #f472b6; border-color: rgba(244, 114, 182, .5); background: rgba(244, 114, 182, .12); }
+
+    /* ── RESPONSIVE: tablet ──────────────────────────── */
+    @media (max-width: 900px) and (min-width: 641px) {
+      main { padding: 28px 22px; }
+      .kpi-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    /* ── RESPONSIVE: scroll horizontal de pestañas ───── */
+    @media (max-width: 640px) {
+      .tabs, .macia-subtabs, .macv-subtabs {
+        overflow-x: auto; flex-wrap: nowrap;
+        scrollbar-width: none; -webkit-overflow-scrolling: touch;
+      }
+      .tabs::-webkit-scrollbar,
+      .macia-subtabs::-webkit-scrollbar,
+      .macv-subtabs::-webkit-scrollbar { display: none; }
+      .tab-btn, .macia-subtab-btn, .macv-subtab-btn {
+        white-space: nowrap; flex: 0 0 auto; padding: 10px 16px;
+      }
+
+      /* MACIA · movimientos → tarjeta legible en móvil
+         (concepto reusa .td-name, monto .td-amount, acciones .td-actions;
+         aquí solo reubicamos fecha, tipo, cuenta y observaciones) */
+      #maciaTableBody td:nth-child(1) { order: 4; flex: 0 0 auto; margin-left: auto; font-size: 12px; color: var(--text-muted); }
+      #maciaTableBody td:nth-child(3) { font-size: 18px; }
+      #maciaTableBody td:nth-child(4) { order: 5; }
+      #maciaTableBody td:nth-child(5) { order: 6; }
+      #maciaTableBody td:nth-child(6) { order: 7; flex: 1 1 100%; max-width: 100%; font-size: 11px; }
+
+      /* MACIA · auditoría → fecha + acción en cabecera, detalle debajo */
+      #maciaAuditBody td:nth-child(1) { order: 0; flex: 1 1 auto; }
+      #maciaAuditBody td:nth-child(2) { order: 1; margin-left: auto; }
+      #maciaAuditBody td:nth-child(3) { order: 3; flex: 1 1 100%; }
+    }
   </style>
 </head>
 
@@ -811,39 +906,47 @@
       ⚠&nbsp; No se pudo cargar la hoja de cálculo. Verifica que el enlace esté publicado e inténtalo de nuevo.
     </div>
 
-    <!-- KPI cards (MACV — cobros y pagos) -->
-    <div class="kpi-grid" id="mainKpiGrid">
-      <div class="kpi" id="kpiBalanceCard">
-        <div class="kpi-label">Balance neto</div>
-        <div class="kpi-val" id="kpiBalance">—</div>
-        <div class="kpi-sub">ingresos − gastos</div>
-      </div>
-      <div class="kpi accent">
-        <div class="kpi-label">Ingresos</div>
-        <div class="kpi-val" id="kpiTotal">—</div>
-        <div class="kpi-sub">total a cobrar</div>
-      </div>
-      <div class="kpi danger">
-        <div class="kpi-label">Gastos</div>
-        <div class="kpi-val" id="kpiExpenses">—</div>
-        <div class="kpi-sub">total pagado</div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-label">Personas</div>
-        <div class="kpi-val" id="kpiPeople">—</div>
-        <div class="kpi-sub">clientes únicos</div>
-      </div>
-    </div>
-
-    <!-- Tab bar -->
+    <!-- Tab bar (grupos independientes) -->
     <div class="tabs">
-      <button class="tab-btn active" data-tab="cobros" onclick="switchTab('cobros')">Cobros</button>
-      <button class="tab-btn" data-tab="pagos" onclick="switchTab('pagos')">Pagos</button>
+      <button class="tab-btn active" data-tab="macv" onclick="switchTab('macv')">MACV</button>
       <button class="tab-btn" data-tab="macia" onclick="switchTab('macia')" style="color:#a78bfa">MACIA</button>
     </div>
 
-    <!-- ── VIEW: COBROS ── -->
-    <div class="panel-view active" id="view-cobros">
+    <!-- ── GRUPO: MACV ── -->
+    <div class="panel-view active" id="view-macv">
+
+      <!-- KPI cards (MACV — cobros y pagos) -->
+      <div class="kpi-grid" id="mainKpiGrid">
+        <div class="kpi" id="kpiBalanceCard">
+          <div class="kpi-label">Balance neto</div>
+          <div class="kpi-val" id="kpiBalance">—</div>
+          <div class="kpi-sub">ingresos − gastos</div>
+        </div>
+        <div class="kpi accent">
+          <div class="kpi-label">Ingresos</div>
+          <div class="kpi-val" id="kpiTotal">—</div>
+          <div class="kpi-sub">total a cobrar</div>
+        </div>
+        <div class="kpi danger">
+          <div class="kpi-label">Gastos</div>
+          <div class="kpi-val" id="kpiExpenses">—</div>
+          <div class="kpi-sub">total pagado</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Personas</div>
+          <div class="kpi-val" id="kpiPeople">—</div>
+          <div class="kpi-sub">clientes únicos</div>
+        </div>
+      </div>
+
+      <!-- Sub-tabs MACV -->
+      <div class="macv-subtabs">
+        <button class="macv-subtab-btn active" data-subtab="cobros" onclick="switchMacvSubtab('cobros')">Cobros</button>
+        <button class="macv-subtab-btn" data-subtab="pagos" onclick="switchMacvSubtab('pagos')">Pagos</button>
+      </div>
+
+      <!-- ── VIEW: COBROS ── -->
+      <div class="macv-subview active" id="macv-sub-cobros">
       <div class="panel">
         <div class="panel-head">
           <span class="panel-title">Cobros</span>
@@ -906,8 +1009,8 @@
       </div>
     </div>
 
-    <!-- ── VIEW: PAGOS ── -->
-    <div class="panel-view" id="view-pagos">
+      <!-- ── VIEW: PAGOS ── -->
+      <div class="macv-subview" id="macv-sub-pagos">
       <div class="panel">
         <div class="panel-head">
           <span class="panel-title">Pagos</span>
@@ -965,9 +1068,10 @@
         </div>
         <div class="summary-grid" id="expSummaryGrid"></div>
       </div>
+      </div>
     </div>
 
-    <!-- ── VIEW: MACIA ── -->
+    <!-- ── GRUPO: MACIA ── -->
     <div class="panel-view" id="view-macia">
       <!-- KPIs -->
       <div class="macia-kpi-grid">
@@ -975,16 +1079,6 @@
           <div class="kpi-label">Saldo Total</div>
           <div class="kpi-val" id="maciaKpiTotal">$0</div>
           <div class="kpi-sub">Nu + Nequi</div>
-        </div>
-        <div class="kpi accent">
-          <div class="kpi-label">Ingresos</div>
-          <div class="kpi-val" id="maciaKpiIngresos">$0</div>
-          <div class="kpi-sub">total recibido</div>
-        </div>
-        <div class="kpi danger">
-          <div class="kpi-label">Egresos</div>
-          <div class="kpi-val" id="maciaKpiEgresos">$0</div>
-          <div class="kpi-sub">total pagado</div>
         </div>
         <div class="kpi macia-nu">
           <div class="kpi-label">Saldo Nu</div>
@@ -995,6 +1089,16 @@
           <div class="kpi-label">Saldo Nequi</div>
           <div class="kpi-val" id="maciaKpiNequi">$0</div>
           <div class="kpi-sub">cuenta Nequi</div>
+        </div>
+        <div class="kpi accent">
+          <div class="kpi-label">Ingresos</div>
+          <div class="kpi-val" id="maciaKpiIngresos">$0</div>
+          <div class="kpi-sub">total recibido</div>
+        </div>
+        <div class="kpi danger">
+          <div class="kpi-label">Egresos</div>
+          <div class="kpi-val" id="maciaKpiEgresos">$0</div>
+          <div class="kpi-sub">total pagado</div>
         </div>
       </div>
 
@@ -1096,9 +1200,11 @@
       </div>
       <div class="form-group">
         <label class="form-label">Categoría</label>
-        <input class="form-control" id="fCategory" type="text" list="catSuggestions"
-          placeholder="ej: YouTube" autocomplete="off" />
-        <datalist id="catSuggestions"></datalist>
+        <div class="combo">
+          <input class="form-control" id="fCategory" type="text"
+            placeholder="Selecciona o crea una categoría…" autocomplete="off" />
+          <div class="combo-pop"></div>
+        </div>
       </div>
       <div class="form-group">
         <label class="form-label">Monto</label>
@@ -1137,22 +1243,27 @@
       </div>
       <div class="form-group">
         <label class="form-label">Concepto</label>
-        <input class="form-control" id="mfConcept" type="text" placeholder="Descripción del movimiento" autocomplete="off" />
+        <div class="combo">
+          <input class="form-control" id="mfConcept" type="text" placeholder="Selecciona o crea un concepto…" autocomplete="off" />
+          <div class="combo-pop"></div>
+        </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
         <div class="form-group">
           <label class="form-label">Tipo</label>
-          <select class="form-control" id="mfType">
-            <option value="ingreso">Ingreso</option>
-            <option value="egreso">Egreso</option>
-          </select>
+          <div class="seg" id="segType" data-input="mfType">
+            <button type="button" class="seg-btn" data-val="ingreso" onclick="segSet(this)"><span class="dot dot-ingreso"></span>Ingreso</button>
+            <button type="button" class="seg-btn" data-val="egreso" onclick="segSet(this)"><span class="dot dot-egreso"></span>Egreso</button>
+          </div>
+          <input type="hidden" id="mfType" value="ingreso" />
         </div>
         <div class="form-group">
           <label class="form-label">Cuenta</label>
-          <select class="form-control" id="mfAccount">
-            <option value="nu">Nu</option>
-            <option value="nequi">Nequi</option>
-          </select>
+          <div class="seg" id="segAccount" data-input="mfAccount">
+            <button type="button" class="seg-btn" data-val="nu" onclick="segSet(this)"><span class="dot dot-nu"></span>Nu</button>
+            <button type="button" class="seg-btn" data-val="nequi" onclick="segSet(this)"><span class="dot dot-nequi"></span>Nequi</button>
+          </div>
+          <input type="hidden" id="mfAccount" value="nu" />
         </div>
       </div>
       <div class="form-group">
@@ -1257,6 +1368,127 @@
       const diff = formatted.length - el.value.length;
       el.value = formatted;
       el.setSelectionRange(pos + diff, pos + diff);
+    }
+
+    /* ── CREATABLE COMBO (etiquetas reutilizables) ──────── */
+    // Normaliza para comparar: minúsculas, sin acentos, espacios colapsados.
+    // Así "YouTube", "youtube" y "you tube" cuentan como la misma etiqueta y no
+    // se crean conceptos/categorías duplicados por diferencias de escritura.
+    function normTag(s) {
+      return (s || '').toString().trim().toLowerCase()
+        .normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ');
+    }
+
+    function escAttr(s) {
+      return (s || '').toString()
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    // Almacén de etiquetas en localStorage (por campo). Las opciones nuevas se
+    // guardan aquí para quedar disponibles en futuros registros aunque aún no
+    // se haya sincronizado/guardado el movimiento.
+    function loadTags(key) {
+      try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; }
+    }
+    function saveTag(key, value) {
+      const v = (value || '').trim(); if (!v) return;
+      const list = loadTags(key), nk = normTag(v);
+      if (!list.some(x => normTag(x) === nk)) {
+        list.push(v);
+        try { localStorage.setItem(key, JSON.stringify(list)); } catch {}
+      }
+    }
+
+    // Une varias fuentes de opciones, deduplicando por clave normalizada y
+    // conservando la primera escritura vista. Devuelve ordenado alfabéticamente.
+    function mergeTags() {
+      const map = new Map();
+      [...arguments].flat().forEach(v => {
+        if (v == null) return;
+        const s = String(v).trim(); if (!s) return;
+        const nk = normTag(s);
+        if (!map.has(nk)) map.set(nk, s);
+      });
+      return [...map.values()].sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
+    }
+
+    // Convierte un <input> dentro de .combo en un select creable: lista opciones
+    // existentes, filtra al escribir, permite crear una nueva y la guarda.
+    // getOptions() se evalúa en cada apertura; storeKey puede ser función.
+    function setupCombo(inputId, getOptions, storeKey) {
+      const input = document.getElementById(inputId);
+      if (!input) return null;
+      const wrap = input.closest('.combo');
+      const pop  = wrap.querySelector('.combo-pop');
+      let items = [];
+
+      const keyOf = () => (typeof storeKey === 'function' ? storeKey() : storeKey);
+
+      function build() {
+        const q    = normTag(input.value);
+        const opts = getOptions();
+        const filtered = q ? opts.filter(o => normTag(o).includes(q)) : opts;
+        items = filtered.slice();
+        let html = filtered.map((o, i) =>
+          `<div class="combo-option" data-i="${i}" data-val="${escAttr(o)}">${escAttr(o)}</div>`).join('');
+
+        const cur = input.value.trim();
+        if (cur && !opts.some(o => normTag(o) === q)) {
+          items.push(cur);
+          html += `<div class="combo-create" data-i="${items.length - 1}" data-val="${escAttr(cur)}">+ Crear "<b>${escAttr(cur)}</b>"</div>`;
+        }
+        if (!html) html = '<div class="combo-empty">Sin coincidencias</div>';
+        pop.innerHTML = html;
+      }
+
+      function open()  { build(); pop.classList.add('open'); }
+      function close() { pop.classList.remove('open'); }
+
+      function choose(i) {
+        if (i < 0 || i >= items.length) return;
+        const el = pop.querySelector(`[data-i="${i}"]`);
+        input.value = items[i];
+        if (el && el.classList.contains('combo-create')) saveTag(keyOf(), items[i]);
+        close();
+        input.focus();
+      }
+
+      function activeIndex() {
+        const els = [...pop.querySelectorAll('.combo-option,.combo-create')];
+        return els.findIndex(e => e.classList.contains('active'));
+      }
+      function setActive(n) {
+        const els = [...pop.querySelectorAll('.combo-option,.combo-create')];
+        if (!els.length) return;
+        const cur = els.findIndex(e => e.classList.contains('active'));
+        const next = ((cur < 0 ? -1 : cur) + n + els.length) % els.length;
+        els.forEach((e, i) => e.classList.toggle('active', i === next));
+        els[next].scrollIntoView({ block: 'nearest' });
+      }
+
+      input.addEventListener('focus', open);
+      input.addEventListener('input', open);
+      input.addEventListener('keydown', e => {
+        const isOpen = pop.classList.contains('open');
+        if (e.key === 'ArrowDown')      { e.preventDefault(); isOpen ? setActive(1) : open(); }
+        else if (e.key === 'ArrowUp')   { if (isOpen) { e.preventDefault(); setActive(-1); } }
+        else if (e.key === 'Enter') {
+          const ai = activeIndex();
+          if (isOpen && ai >= 0) { e.preventDefault(); choose(ai); }
+          else { const cur = input.value.trim(); if (cur) { saveTag(keyOf(), cur); close(); } }
+        } else if (e.key === 'Escape') { if (isOpen) { e.stopPropagation(); close(); } }
+      });
+      // mousedown (no click) para seleccionar antes de que el blur cierre el pop.
+      pop.addEventListener('mousedown', e => {
+        const opt = e.target.closest('.combo-option,.combo-create');
+        if (!opt) return;
+        e.preventDefault();
+        choose(parseInt(opt.dataset.i, 10));
+      });
+      input.addEventListener('blur', () => setTimeout(close, 120));
+
+      return { open, close, refresh: build };
     }
 
     /* ── PAY STATUS ─────────────────────────────────────── */
@@ -1627,7 +1859,11 @@
         return true;
       });
 
+      // Por defecto (sin columna elegida): último movimiento agregado primero.
+      // allData/allExpenses están en orden de hoja (antiguos→nuevos, los nuevos
+      // se agregan al final), así que invertir deja lo más reciente arriba.
       if (sortCol) sortFiltered();
+      else filteredData.reverse();
       renderTable();
     }
 
@@ -1639,7 +1875,7 @@
       sortCol = col;
 
       document.querySelectorAll('thead th').forEach((th, i) => {
-        if (!th.closest('#view-pagos')) th.classList.toggle('active', SORT_COLS[i] === col);
+        if (th.closest('#macv-sub-cobros')) th.classList.toggle('active', SORT_COLS[i] === col);
       });
       SORT_COLS.forEach(c => { const el = document.getElementById(`sa-${c}`); if (el) el.textContent = '↕'; });
       const arrow = document.getElementById(`sa-${col}`);
@@ -1725,6 +1961,7 @@
       });
 
       if (sortExpCol) sortExpFiltered();
+      else filteredExpenses.reverse();
       renderExpTable();
     }
 
@@ -1859,17 +2096,38 @@
     }
 
     /* ── TABS ───────────────────────────────────────────── */
+    // Grupos de nivel superior: MACV (cobros/pagos) · MACIA (movimientos/auditoría).
     function switchTab(tab) {
       document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.tab === tab);
       });
-      document.getElementById('view-cobros').classList.toggle('active', tab === 'cobros');
-      document.getElementById('view-pagos').classList.toggle('active',  tab === 'pagos');
-      document.getElementById('view-macia').classList.toggle('active',  tab === 'macia');
+      // Cada grupo trae sus propios KPIs dentro de su vista, así que basta con
+      // alternar la vista activa (estructura idéntica a la de MACIA).
+      document.getElementById('view-macv').classList.toggle('active',  tab === 'macv');
+      document.getElementById('view-macia').classList.toggle('active', tab === 'macia');
+      try { localStorage.setItem('ct_active_tab', tab); } catch {}
+    }
 
-      // MACIA es un módulo aparte (finanzas del negocio): ocultamos los KPIs
-      // personales de cobros/pagos para no mezclar datos.
-      document.getElementById('mainKpiGrid').style.display = tab === 'macia' ? 'none' : '';
+    // Sub-pestañas dentro de MACV.
+    function switchMacvSubtab(sub) {
+      document.querySelectorAll('.macv-subtab-btn').forEach(b =>
+        b.classList.toggle('active', b.dataset.subtab === sub));
+      document.getElementById('macv-sub-cobros').classList.toggle('active', sub === 'cobros');
+      document.getElementById('macv-sub-pagos').classList.toggle('active',  sub === 'pagos');
+      try { localStorage.setItem('ct_macv_subtab', sub); } catch {}
+    }
+
+    // Restaura el último grupo / sub-pestaña usados (persisten entre recargas).
+    function restoreTabs() {
+      let tab = 'macv', macv = 'cobros', macia = 'movimientos';
+      try {
+        tab   = localStorage.getItem('ct_active_tab')  || tab;
+        macv  = localStorage.getItem('ct_macv_subtab') || macv;
+        macia = localStorage.getItem('ct_macia_subtab') || macia;
+      } catch {}
+      switchMacvSubtab(macv);
+      switchMaciaSubtab(macia);
+      switchTab(tab);
     }
 
     /* ── MODAL ──────────────────────────────────────────── */
@@ -1885,7 +2143,6 @@
       document.getElementById('fDate').value                 = '';
       document.getElementById('btnSave').disabled            = false;
       document.getElementById('btnSave').textContent         = 'Guardar';
-      _fillCatSuggestions(sheet);
       _showModal();
     }
 
@@ -1902,15 +2159,9 @@
       document.getElementById('fDate').value                 = r.date || '';
       document.getElementById('btnSave').disabled            = false;
       document.getElementById('btnSave').textContent         = 'Guardar';
-      _fillCatSuggestions(sheet);
       _showModal();
     }
 
-    function _fillCatSuggestions(sheet) {
-      const src  = sheet === 'cobros' ? allData : allExpenses;
-      const cats = [...new Set(src.map(r => r.category).filter(Boolean))].sort();
-      document.getElementById('catSuggestions').innerHTML = cats.map(c => `<option value="${c}">`).join('');
-    }
 
     function _showModal() {
       document.getElementById('modalBackdrop').style.display = 'block';
@@ -1938,6 +2189,9 @@
 
       if (modalSheet === 'cobros' && !name) { showNotification('Nombre requerido', 'err'); return; }
       if (!amount)                          { showNotification('Monto requerido', 'err');  return; }
+
+      // La categoría usada queda registrada como etiqueta reutilizable.
+      if (category) saveTag(modalSheet === 'pagos' ? 'ct_tags_cat_pagos' : 'ct_tags_cat_cobros', category);
 
       const btn = document.getElementById('btnSave');
       btn.disabled    = true;
@@ -2301,6 +2555,7 @@
       document.querySelectorAll('.macia-subview').forEach(v => v.classList.remove('active'));
       document.getElementById(`macia-sub-${sub}`).classList.add('active');
       if (sub === 'auditoria') renderMaciaAudit();
+      try { localStorage.setItem('ct_macia_subtab', sub); } catch {}
     }
 
     /* ── MODAL ────────────────────────────────────────────── */
@@ -2313,22 +2568,34 @@
         document.getElementById('mfDate').value    = t.date;
         document.getElementById('mfConcept').value = t.concept;
         document.getElementById('mfAmount').value  = t.amount ? t.amount.toLocaleString('es-CO') : '';
-        document.getElementById('mfType').value    = t.type;
-        document.getElementById('mfAccount').value = t.account;
+        segSetValue('segType',    t.type    || 'ingreso');
+        segSetValue('segAccount', t.account || 'nu');
         document.getElementById('mfObs').value     = t.observations || '';
       } else {
         document.getElementById('maciaModalTitle').textContent = 'Nuevo movimiento';
         document.getElementById('mfDate').value    = new Date().toISOString().slice(0, 10);
         document.getElementById('mfConcept').value = '';
         document.getElementById('mfAmount').value  = '';
-        document.getElementById('mfType').value    = 'ingreso';
-        document.getElementById('mfAccount').value = 'nu';
+        segSetValue('segType',    'ingreso');
+        segSetValue('segAccount', 'nu');
         document.getElementById('mfObs').value     = '';
       }
       document.getElementById('maciaBtnSave').disabled          = false;
       document.getElementById('maciaBackdrop').style.display    = 'block';
       document.getElementById('maciaModal').style.display       = 'flex';
-      setTimeout(() => document.getElementById('mfConcept').focus(), 50);
+    }
+
+    /* Control segmentado (switch de 2 opciones visibles). El valor se refleja
+       en un <input hidden> para que submit/edición lo lean igual que un select. */
+    function segSet(btn) {
+      const seg = btn.closest('.seg');
+      seg.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b === btn));
+      const hidden = document.getElementById(seg.dataset.input);
+      if (hidden) hidden.value = btn.dataset.val;
+    }
+    function segSetValue(segId, val) {
+      const btn = document.querySelector(`#${segId} .seg-btn[data-val="${val}"]`);
+      if (btn) segSet(btn);
     }
 
     function closeMaciaModal() {
@@ -2347,6 +2614,9 @@
       if (!concept) { showNotification('Concepto requerido', 'err'); return; }
       if (!amount)  { showNotification('Monto requerido',   'err'); return; }
       if (!date)    { showNotification('Fecha requerida',   'err'); return; }
+
+      // El concepto usado queda registrado como etiqueta reutilizable.
+      saveTag('ct_tags_concept', concept);
 
       if (maciaModalId) {
         const idx = maciaTx.findIndex(x => x.id === maciaModalId);
@@ -2579,8 +2849,21 @@
       navigator.serviceWorker.register('sw.js');
     }
 
+    /* ── COMBOS CREABLES ──────────────────────────────────── */
+    // Concepto (MACIA): opciones = conceptos ya usados + etiquetas guardadas.
+    setupCombo('mfConcept',
+      () => mergeTags(maciaTx.map(t => t.concept), loadTags('ct_tags_concept')),
+      'ct_tags_concept');
+
+    // Categoría (cobros/pagos): la fuente y el almacén dependen del sheet activo.
+    setupCombo('fCategory',
+      () => modalSheet === 'pagos'
+        ? mergeTags(allExpenses.map(r => r.category), loadTags('ct_tags_cat_pagos'))
+        : mergeTags(allData.map(r => r.category),     loadTags('ct_tags_cat_cobros')),
+      () => modalSheet === 'pagos' ? 'ct_tags_cat_pagos' : 'ct_tags_cat_cobros');
+
     /* ── INIT ───────────────────────────────────────────── */
-    sortBy('date');
+    restoreTabs();
     loadData();
   </script>
 </body>
