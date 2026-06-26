@@ -1,122 +1,177 @@
-// ── CollectTrack — Google Apps Script ───────────────────────────────────────
-// Pegar en: Google Sheets → Extensiones → Apps Script → reemplazar todo
+// ── CollectTrack + MACIA — Google Apps Script ───────────────────────────────
+// Pegar en: Google Sheets → Extensiones → Apps Script → reemplazar TODO
 //
-// Despliegue:
+// Despliegue (cada cambio al código requiere versión nueva):
 //   1. Guardar (Ctrl+S)
-//   2. Implementar → Nueva implementación → Aplicación web
-//   3. Ejecutar como: Yo
-//   4. Quién tiene acceso: Cualquier usuario
-//   5. Copiar URL → pegar en API_URL de index.html
+//   2. Implementar (Deploy) → Administrar implementaciones (Manage deployments)
+//   3. En la implementación activa → Editar (lápiz ✏️)
+//   4. Versión → "Versión nueva" (New version)
+//   5. Quién tiene acceso → "Cualquier usuario" (Anyone)
+//   6. Implementar (Deploy) → Listo
 //
-// Cada cambio al código requiere NUEVA implementación (no actualiza la URL anterior).
+//   ⚠ Usa Editar → Versión nueva sobre la implementación EXISTENTE para que la
+//   URL (API_URL) NO cambie. Si creas una "Implementación nueva", la URL cambia
+//   y habría que actualizarla en index.html.
+//
+// Hojas y columnas esperadas (fila 1 = encabezados):
+//   cobros:      NAME | CATEGORY | AMOUNT | DATE | PAID
+//   pagos:       CATEGORY | AMOUNT | DATE | PAID
+//   macia:       ID | DATE | CONCEPT | AMOUNT | TYPE | ACCOUNT | OBSERVATIONS | CREATED_AT
+//   macia_audit: ID | ACTION | DETAIL | TIMESTAMP
 // ─────────────────────────────────────────────────────────────────────────────
 
+const SS = SpreadsheetApp.getActiveSpreadsheet();
+
+// Orden de columnas para escritura por hoja.
+const SHEET_COLS = {
+  cobros:      ['NAME', 'CATEGORY', 'AMOUNT', 'DATE', 'PAID'],
+  pagos:       ['CATEGORY', 'AMOUNT', 'DATE', 'PAID'],
+  macia:       ['ID', 'DATE', 'CONCEPT', 'AMOUNT', 'TYPE', 'ACCOUNT', 'OBSERVATIONS', 'CREATED_AT'],
+  macia_audit: ['ID', 'ACTION', 'DETAIL', 'TIMESTAMP'],
+};
+
+// ── GET (JSONP) — lectura Y escritura ────────────────────────────────────────
+// Apps Script no envía cabeceras CORS, por lo que un fetch() cross-origin queda
+// bloqueado. JSONP (carga vía <script>) no está sujeto a CORS, así que TODA la
+// comunicación —incluidas las mutaciones— pasa por aquí con ?action=...
 function doGet(e) {
-  const sheetName = e.parameter.sheet || 'cobros';
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+  const cb     = e.parameter.callback;
+  const action = e.parameter.action;
 
-  if (!sheet) {
-    const json = JSON.stringify({ error: 'Hoja no encontrada: ' + sheetName });
-    const cb = e.parameter.callback;
-    return ContentService
-      .createTextOutput(cb ? `${cb}(${json})` : json)
-      .setMimeType(cb ? ContentService.MimeType.JAVASCRIPT : ContentService.MimeType.JSON);
+  let result;
+  try {
+    if (action) {
+      // Mutación: serializa con un lock para evitar condiciones de carrera.
+      const lock = LockService.getScriptLock();
+      lock.tryLock(10000);
+      try {
+        result = handleMutation(action, e.parameter);
+      } finally {
+        lock.releaseLock();
+      }
+    } else {
+      result = readSheet(e.parameter.sheet || 'cobros');
+    }
+  } catch (err) {
+    result = { ok: false, error: err.message };
   }
 
-  const values = sheet.getDataRange().getValues();
-  if (values.length < 2) {
-    const json = '[]';
-    const cb = e.parameter.callback;
-    return ContentService
-      .createTextOutput(cb ? `${cb}(${json})` : json)
-      .setMimeType(cb ? ContentService.MimeType.JAVASCRIPT : ContentService.MimeType.JSON);
-  }
-
-  const headers = values[0].map(h => String(h).toUpperCase().trim());
-  const rows = values.slice(1);
-
-  const data = rows
-    .map((row, i) => {
-      const obj = { _row: i + 2 }; // fila real en Sheets (1-based, +1 por header)
-      headers.forEach((h, j) => { obj[h] = row[j]; });
-      return obj;
-    })
-    .filter(r => headers.some(h => r[h] !== '' && r[h] !== null && r[h] !== undefined));
-
-  const json = JSON.stringify(data);
-  const cb = e.parameter.callback;
+  const json = JSON.stringify(result);
   return ContentService
     .createTextOutput(cb ? `${cb}(${json})` : json)
     .setMimeType(cb ? ContentService.MimeType.JAVASCRIPT : ContentService.MimeType.JSON);
 }
 
+// Enruta una mutación (create/update/delete/setPaid) recibida por GET o POST.
+function handleMutation(action, p) {
+  const sheet = p.sheet;
+  if      (action === 'create')  return rowCreate(sheet, p);
+  else if (action === 'update')  return rowUpdate(sheet, p);
+  else if (action === 'delete')  return rowDelete(sheet, p);
+  else if (action === 'setPaid') return rowSetPaid(sheet, p);
+  return { ok: false, error: 'Acción desconocida: ' + action };
+}
+
+// ── POST (CRUD) ──────────────────────────────────────────────────────────────
 function doPost(e) {
+  let payload;
   try {
-    const payload = JSON.parse(e.postData.contents);
-    const { action, sheet: sheetName, _row } = payload;
-
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName || 'cobros');
-    if (!sheet) throw new Error('Hoja no encontrada: ' + sheetName);
-
-    // ── CREATE ───────────────────────────────────────────────────────────────
-    if (action === 'create') {
-      if (sheetName === 'pagos') {
-        // pagos: CATEGORY | AMOUNT | DATE
-        sheet.appendRow([
-          payload.CATEGORY || '',
-          payload.AMOUNT   || '',
-          payload.DATE     || '',
-        ]);
-      } else {
-        // cobros: NAME | AMOUNT | CATEGORY | DATE
-        sheet.appendRow([
-          payload.NAME     || '',
-          payload.AMOUNT   || '',
-          payload.CATEGORY || '',
-          payload.DATE     || '',
-        ]);
-      }
-    }
-
-    // ── UPDATE ───────────────────────────────────────────────────────────────
-    if (action === 'update') {
-      if (!_row) throw new Error('Falta _row para update');
-      if (sheetName === 'pagos') {
-        sheet.getRange(_row, 1).setValue(payload.CATEGORY || '');
-        sheet.getRange(_row, 2).setValue(payload.AMOUNT   || '');
-        sheet.getRange(_row, 3).setValue(payload.DATE     || '');
-      } else {
-        sheet.getRange(_row, 1).setValue(payload.NAME     || '');
-        sheet.getRange(_row, 2).setValue(payload.AMOUNT   || '');
-        sheet.getRange(_row, 3).setValue(payload.CATEGORY || '');
-        sheet.getRange(_row, 4).setValue(payload.DATE     || '');
-      }
-    }
-
-    // ── DELETE ───────────────────────────────────────────────────────────────
-    if (action === 'delete') {
-      if (!_row) throw new Error('Falta _row para delete');
-      sheet.deleteRow(_row);
-    }
-
-    // ── SET PAID ─────────────────────────────────────────────────────────────
-    // Marca el periodo ("YYYY-MM") en que se pagó la fila, o '' para limpiar.
-    // La columna PAID se localiza por encabezado; si no existe, se crea.
-    if (action === 'setPaid') {
-      if (!_row) throw new Error('Falta _row para setPaid');
-      const col = getOrCreatePaidCol(sheet);
-      sheet.getRange(_row, col).setValue(payload.PAID || '');
-    }
-
-    return ContentService
-      .createTextOutput(JSON.stringify({ ok: true }))
-      .setMimeType(ContentService.MimeType.JSON);
-
+    payload = JSON.parse(e.postData.contents);
   } catch (err) {
-    return ContentService
-      .createTextOutput(JSON.stringify({ ok: false, error: err.message }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return jsonResp({ ok: false, error: 'JSON inválido' });
   }
+
+  const lock = LockService.getScriptLock();
+  lock.tryLock(10000);
+
+  try {
+    return jsonResp(handleMutation(payload.action, payload));
+  } catch (err) {
+    return jsonResp({ ok: false, error: err.message });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// ── READ ─────────────────────────────────────────────────────────────────────
+function readSheet(name) {
+  const sheet = SS.getSheetByName(name);
+  if (!sheet) return [];
+
+  const data = sheet.getDataRange().getValues();
+  if (data.length < 2) return [];
+
+  const headers = data[0].map(h => String(h).toUpperCase().trim());
+
+  return data.slice(1)
+    .map((row, i) => {
+      const obj = { _row: i + 2 }; // fila real en Sheets (1-based, +1 por header)
+      headers.forEach((h, j) => { obj[h] = row[j] !== undefined ? row[j] : ''; });
+      return obj;
+    })
+    .filter(r => headers.some(h => r[h] !== '' && r[h] !== null && r[h] !== undefined));
+}
+
+// ── CREATE ───────────────────────────────────────────────────────────────────
+function rowCreate(sheetName, p) {
+  const sheet = SS.getSheetByName(sheetName);
+  if (!sheet) return { ok: false, error: 'Hoja no encontrada: ' + sheetName };
+
+  const cols = SHEET_COLS[sheetName];
+  if (!cols)  return { ok: false, error: 'Hoja no configurada: ' + sheetName };
+
+  // Los parámetros llegan como texto (JSONP/GET); AMOUNT debe quedar numérico.
+  const row = cols.map(col => {
+    let v = p[col] !== undefined ? p[col] : '';
+    if (col === 'AMOUNT' && v !== '') v = Number(v) || 0;
+    return v;
+  });
+  sheet.appendRow(row);
+  return { ok: true, _row: sheet.getLastRow() };
+}
+
+// ── UPDATE ───────────────────────────────────────────────────────────────────
+function rowUpdate(sheetName, p) {
+  const sheet = SS.getSheetByName(sheetName);
+  if (!sheet)  return { ok: false, error: 'Hoja no encontrada: ' + sheetName };
+  if (!p._row) return { ok: false, error: '_row requerido' };
+
+  const cols = SHEET_COLS[sheetName];
+  if (!cols)  return { ok: false, error: 'Hoja no configurada: ' + sheetName };
+
+  const rowNum = Number(p._row);
+  cols.forEach((col, j) => {
+    // ID y CREATED_AT no se sobreescriben en una edición.
+    if (col === 'ID' || col === 'CREATED_AT') return;
+    if (p[col] === undefined) return;
+    let v = p[col];
+    if (col === 'AMOUNT' && v !== '') v = Number(v) || 0;
+    sheet.getRange(rowNum, j + 1).setValue(v);
+  });
+
+  return { ok: true };
+}
+
+// ── DELETE ───────────────────────────────────────────────────────────────────
+function rowDelete(sheetName, p) {
+  const sheet = SS.getSheetByName(sheetName);
+  if (!sheet)  return { ok: false, error: 'Hoja no encontrada: ' + sheetName };
+  if (!p._row) return { ok: false, error: '_row requerido' };
+
+  sheet.deleteRow(Number(p._row));
+  return { ok: true };
+}
+
+// ── SET PAID ─────────────────────────────────────────────────────────────────
+// Marca el periodo ("YYYY-MM") en que se pagó la fila, o '' para limpiar.
+function rowSetPaid(sheetName, p) {
+  const sheet = SS.getSheetByName(sheetName);
+  if (!sheet)  return { ok: false, error: 'Hoja no encontrada: ' + sheetName };
+  if (!p._row) return { ok: false, error: '_row requerido' };
+
+  const col = getOrCreatePaidCol(sheet);
+  sheet.getRange(Number(p._row), col).setValue(p.PAID || '');
+  return { ok: true };
 }
 
 // ── Localiza la columna "PAID" por encabezado; la crea al final si falta ──────
@@ -129,4 +184,60 @@ function getOrCreatePaidCol(sheet) {
   const col = lastCol + 1;
   sheet.getRange(1, col).setValue('PAID');
   return col;
+}
+
+// ── HELPER ───────────────────────────────────────────────────────────────────
+function jsonResp(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// ── SEED MACIA (ejecutar UNA vez desde el editor: seleccionar seedMacia → ▶) ──
+// Limpia la hoja "macia" (deja el encabezado) y carga el historial completo.
+// Corre del lado del servidor: sin CORS, sin timeouts, sin duplicados.
+// Monto negativo = egreso, positivo = ingreso. Todo en cuenta Nu.
+function seedMacia() {
+  const sheet = SS.getSheetByName('macia');
+  if (!sheet) throw new Error('No existe la hoja "macia"');
+
+  // 1. Borra todas las filas de datos (conserva la fila 1 de encabezados).
+  if (sheet.getLastRow() > 1) {
+    sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).clearContent();
+  }
+
+  // 2. Historial [fecha, concepto, monto con signo].
+  const REGS = [
+    ['2025-03-05','adelanto desarrollo jdt',2000000],['2025-03-01','clickfunnels',-402000],['2025-03-01','chatgpt',-86000],['2025-03-01','sueldo miguel',-1600000],['2025-03-07','transferencia a 3164533392',-1000000],
+    ['2025-05-02','pago desarrollo + mante y plataforma',3200000],['2025-05-01','chatgpt',-86000],['2025-04-01','clickfunnels',-420000],['2025-06-01','Suscripcion sitio web JDT',400000],['2025-06-01','chatgpt',-86000],
+    ['2025-07-01','certificados jdt',600000],['2025-07-01','sueldo miguel',-400000],['2025-07-01','chatgpt',-86000],['2025-07-01','Suscripcion sitio web JDT',400000],['2025-07-31','odoo',-4409588],
+    ['2025-08-01','chatgpt',-83000],['2025-08-01','miguel camacho aporte',1489588],['2025-09-01','Mantenimiento BOLIGLOBOS',400000],['2025-09-01','chatgpt',-80000],
+    ['2025-10-01','Mantenimiento BOLIGLOBOS',400000],['2025-10-01','almacenamiento drive',-75500],['2025-10-01','Plataforma JDT',400000],['2025-10-01','dominio macia',-61000],['2025-10-01','chatgpt',-81000],
+    ['2025-11-01','chatgpt',-81000],['2025-11-01','Plataforma JDT',400000],['2025-12-01','Plataforma JDT',400000],['2025-12-01','Claude',-80000],
+    ['2026-01-01','Claude',-80000],['2026-01-01','Mantenimiento JDT',410000],['2026-01-01','Plataforma JDT',400000],['2026-01-01','Certificado resina JDT',100000],['2026-01-01','Mantenimiento BOLIGLOBOS',410000],['2026-01-01','Sueldo miguel cuellar',-1750000],['2026-01-01','Montajes JDT',4000000],['2026-01-01','20% miguel cuellar',-698000],['2026-01-01','80% miguel camacho',-2792000],
+    ['2026-02-01','Claude',-80000],['2026-02-01','Biaticos',-125000],['2026-02-01','Mantenimiento JDT',410000],['2026-02-01','Plataforma JDT',400000],['2026-02-01','Certificado resina JDT',100000],['2026-02-01','Mantenimiento BOLIGLOBOS',410000],['2026-02-01','Montajes JDT',3500000],['2026-02-01','Sueldo miguel cuellar',-1750000],['2026-02-01','20% miguel cuellar',-573000],['2026-02-01','80% miguel camacho',-2292000],
+    ['2026-03-01','Claude',-80000],['2026-03-01','Plataforma JDT',910000],['2026-03-01','Mantenimiento BOLIGLOBOS',410000],['2026-03-01','Montajes JDT',1100000],['2026-03-01','Sueldo miguel cuellar',-1750000],['2026-03-01','20% miguel cuellar',-118000],['2026-03-01','80% miguel camacho',-472000],
+    ['2026-04-01','Mantenimiento BOLIGLOBOS',410000],['2026-04-01','Claude',-80000],['2026-04-01','Plataforma JDT',910000],['2026-04-01','Dominio JDT',-180000],['2026-04-01','Montajes JDT',1100000],['2026-04-01','Sueldo miguel cuellar',-1750000],['2026-04-01','20% miguel cuellar',-118000],['2026-04-01','80% miguel camacho',-472000],['2026-04-01','Dominio JDT',180000],
+    ['2026-05-01','Mantenimiento BOLIGLOBOS',410000],['2026-05-01','Claude',-80000],['2026-05-01','Plataforma JDT',910000],['2026-05-01','Montajes JDT',1250000],['2026-05-01','Sueldo miguel cuellar',-1750000],['2026-05-01','20% miguel cuellar',-148000],['2026-05-01','80% miguel camacho',-592000],
+  ];
+
+  // 3. Arma la matriz según el orden de columnas y escribe todo de una vez.
+  const now = new Date().toISOString();
+  const rows = REGS.map((r, i) => {
+    const [date, concept, amt] = r;
+    const id = Utilities.getUuid();
+    // ID | DATE | CONCEPT | AMOUNT | TYPE | ACCOUNT | OBSERVATIONS | CREATED_AT
+    return [id, date, concept, Math.abs(amt), amt < 0 ? 'egreso' : 'ingreso', 'nu', '', now];
+  });
+
+  sheet.getRange(2, 1, rows.length, rows[0].length).setValues(rows);
+
+  // 4. Registra el evento en auditoría.
+  const audit = SS.getSheetByName('macia_audit');
+  if (audit) {
+    audit.appendRow([Utilities.getUuid(), 'import_csv',
+      rows.length + ' movimientos cargados — historial CUENTAS MACIA (todo en Nu)', now]);
+  }
+
+  return rows.length + ' filas cargadas en "macia"';
 }
