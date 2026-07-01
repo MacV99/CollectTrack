@@ -1,0 +1,50 @@
+      <div class="panel">
+        <div class="panel-head">
+          <span class="panel-title">Pagos</span>
+          <div class="panel-head-right">
+            <span class="row-count">
+              mostrando <b id="expVisibleCount">0</b> de <b id="expTotalCount">0</b>
+            </span>
+            <button class="btn-add" onclick="openCreateModal('pagos')">
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor"
+                stroke-width="2.2" stroke-linecap="round">
+                <line x1="6" y1="1" x2="6" y2="11"/><line x1="1" y1="6" x2="11" y2="6"/>
+              </svg>
+              Nuevo
+            </button>
+          </div>
+        </div>
+
+        <div class="filters">
+          <select class="filter-select" id="filterExpCategory" onchange="applyExpFilters()">
+            <option value="">Todas las categorías</option>
+          </select>
+          <select class="filter-select" id="filterExpDate" onchange="applyExpFilters()">
+            <option value="">Todos los días</option>
+          </select>
+          <select class="filter-select" id="filterExpStatus" onchange="applyExpFilters()">
+            <option value="">Todos los estados</option>
+            <option value="paid">Al día</option>
+            <option value="pending">Pendientes</option>
+            <option value="overdue">Atrasados</option>
+          </select>
+        </div>
+
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th onclick="sortExpBy('category')">Categoría <span class="sort-arrow" id="esa-category">↕</span></th>
+                <th onclick="sortExpBy('amount')">Monto <span class="sort-arrow" id="esa-amount">↕</span></th>
+                <th onclick="sortExpBy('date')">Día <span class="sort-arrow" id="esa-date">↕</span></th>
+                <th class="no-sort"></th>
+              </tr>
+            </thead>
+            <tbody id="expTableBody">
+              <tr class="state-row">
+                <td colspan="4"><span class="spinner"></span>Cargando datos…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>

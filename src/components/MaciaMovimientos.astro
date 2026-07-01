@@ -1,0 +1,45 @@
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Historial de movimientos</span>
+            <div class="panel-head-right">
+              <span class="row-count">mostrando <b id="maciaVisibleCount">0</b> de <b id="maciaTotalCount">0</b></span>
+<button class="btn-add" onclick="openMaciaModal()">
+                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="6" y1="1" x2="6" y2="11"/><line x1="1" y1="6" x2="11" y2="6"/></svg>
+                Nuevo
+              </button>
+            </div>
+          </div>
+          <div class="filters">
+            <select class="filter-select" id="maciaFilterType" onchange="applyMaciaFilters()">
+              <option value="">Todos los tipos</option>
+              <option value="ingreso">Ingresos</option>
+              <option value="egreso">Egresos</option>
+            </select>
+            <select class="filter-select" id="maciaFilterAccount" onchange="applyMaciaFilters()">
+              <option value="">Todas las cuentas</option>
+              <option value="nu">Nu</option>
+              <option value="nequi">Nequi</option>
+            </select>
+            <input class="filter-input" id="maciaFilterFrom" type="date" oninput="applyMaciaFilters()" title="Desde" />
+            <input class="filter-input" id="maciaFilterTo"   type="date" oninput="applyMaciaFilters()" title="Hasta" />
+            <input class="filter-input" id="maciaFilterSearch" type="text" placeholder="Buscar concepto…" oninput="applyMaciaFilters()" />
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th onclick="sortMaciaBy('date')">Fecha <span class="sort-arrow" id="msa-date">↓</span></th>
+                  <th onclick="sortMaciaBy('concept')">Concepto <span class="sort-arrow" id="msa-concept">↕</span></th>
+                  <th onclick="sortMaciaBy('amount')">Monto <span class="sort-arrow" id="msa-amount">↕</span></th>
+                  <th class="no-sort">Tipo</th>
+                  <th class="no-sort">Cuenta</th>
+                  <th class="no-sort">Observaciones</th>
+                  <th class="no-sort"></th>
+                </tr>
+              </thead>
+              <tbody id="maciaTableBody">
+                <tr class="state-row"><td colspan="7">No hay movimientos. Agrega uno con el botón +</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>

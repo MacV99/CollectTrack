@@ -1,0 +1,11 @@
+---
+// Resumen por categoría. El grid lo rellena renderSummary() por id.
+const { gridId } = Astro.props;
+---
+
+<div class="panel">
+  <div class="panel-head">
+    <span class="panel-title">Resumen por categoría</span>
+  </div>
+  <div class="summary-grid" id={gridId}></div>
+</div>

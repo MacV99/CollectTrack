@@ -1,0 +1,53 @@
+      <div class="panel">
+        <div class="panel-head">
+          <span class="panel-title">Cobros</span>
+          <div class="panel-head-right">
+            <span class="row-count">
+              mostrando <b id="visibleCount">0</b> de <b id="totalCount">0</b>
+            </span>
+            <button class="btn-add" onclick="openCreateModal('cobros')">
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor"
+                stroke-width="2.2" stroke-linecap="round">
+                <line x1="6" y1="1" x2="6" y2="11"/><line x1="1" y1="6" x2="11" y2="6"/>
+              </svg>
+              Nuevo
+            </button>
+          </div>
+        </div>
+
+        <div class="filters">
+          <input class="filter-input" id="searchInput" type="text" placeholder="Buscar por nombre…"
+            oninput="applyFilters()" />
+          <select class="filter-select" id="filterCategory" onchange="applyFilters()">
+            <option value="">Todas las categorías</option>
+          </select>
+          <select class="filter-select" id="filterDate" onchange="applyFilters()">
+            <option value="">Todos los días</option>
+          </select>
+          <select class="filter-select" id="filterStatus" onchange="applyFilters()">
+            <option value="">Todos los estados</option>
+            <option value="paid">Al día</option>
+            <option value="pending">Pendientes</option>
+            <option value="overdue">Atrasados</option>
+          </select>
+        </div>
+
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th onclick="sortBy('name')">Nombre <span class="sort-arrow" id="sa-name">↕</span></th>
+                <th onclick="sortBy('date')">Día <span class="sort-arrow" id="sa-date">↕</span></th>
+                <th onclick="sortBy('amount')">Monto <span class="sort-arrow" id="sa-amount">↕</span></th>
+                <th onclick="sortBy('category')">Categoría <span class="sort-arrow" id="sa-category">↕</span></th>
+                <th class="no-sort"></th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+              <tr class="state-row">
+                <td colspan="5"><span class="spinner"></span>Cargando datos…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>

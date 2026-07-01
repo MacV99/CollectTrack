@@ -1,0 +1,62 @@
+<div class="modal-backdrop" id="maciaBackdrop" onclick="closeMaciaModal()"></div>
+<div class="modal" id="maciaModal">
+  <div class="modal-header">
+    <span class="modal-title" id="maciaModalTitle">Nuevo movimiento</span>
+    <button class="modal-close" onclick="closeMaciaModal()">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="form-grid-2">
+      <div class="form-group">
+        <label class="form-label">Fecha</label>
+        <input class="form-control" id="mfDate" type="date" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Monto</label>
+        <input class="form-control" id="mfAmount" type="text" inputmode="numeric" placeholder="ej: 50.000" oninput="fmtAmountInput(this)" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Concepto</label>
+      <div class="combo">
+        <input class="form-control" id="mfConcept" type="text" placeholder="Selecciona o crea un concepto…" autocomplete="off" />
+        <div class="combo-pop"></div>
+      </div>
+    </div>
+    <div class="form-grid-2">
+      <div class="form-group">
+        <label class="form-label">Tipo</label>
+        <div class="seg" id="segType" data-input="mfType">
+          <button type="button" class="seg-btn" data-val="ingreso" onclick="segSet(this)"><span class="dot dot-ingreso"></span>Ingreso</button>
+          <button type="button" class="seg-btn" data-val="egreso" onclick="segSet(this)"><span class="dot dot-egreso"></span>Egreso</button>
+        </div>
+        <input type="hidden" id="mfType" value="ingreso" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Cuenta</label>
+        <div class="seg" id="segAccount" data-input="mfAccount">
+          <button type="button" class="seg-btn" data-val="nu" onclick="segSet(this)"><span class="dot dot-nu"></span>Nu</button>
+          <button type="button" class="seg-btn" data-val="nequi" onclick="segSet(this)"><span class="dot dot-nequi"></span>Nequi</button>
+        </div>
+        <input type="hidden" id="mfAccount" value="nu" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Observaciones</label>
+      <textarea class="form-control form-control-textarea" id="mfObs" placeholder="Notas adicionales…"></textarea>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-cancel" onclick="closeMaciaModal()">Cancelar</button>
+    <button class="btn-save" id="maciaBtnSave" onclick="submitMaciaModal()">Guardar</button>
+  </div>
+</div>
+
+<style>
+  /* Rejilla de dos columnas para los pares fecha/monto y tipo/cuenta.
+     Scoped: este markup es estático, así que el scoping de Astro sí aplica. */
+  .form-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+</style>

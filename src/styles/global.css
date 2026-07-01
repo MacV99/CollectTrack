@@ -1,0 +1,24 @@
+/* ============================================================
+   global.css — base reutilizable (convención MacV).
+
+   Aquí solo van utilidades genéricas que sirven en cualquier
+   proyecto. Los tokens de diseño y los estilos propios de
+   CollectTrack (tema oscuro, tablas, badges, modales…) viven en
+   project.css para preservar el look ya verificado.
+   ============================================================ */
+
+/* Utilidades flex (no usar style="" inline; sobrescribir en el
+   <style> scoped del componente solo lo que difiera). */
+.flex-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}

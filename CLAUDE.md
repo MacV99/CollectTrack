@@ -4,32 +4,62 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-CollectTrack is a zero-build vanilla HTML/CSS/JS PWA for tracking personal payment collections. There is no package.json, no bundler, no framework — the entire app lives in `index.html`.
+CollectTrack is an **Astro** PWA for tracking personal payment collections (MACV: cobros/pagos) and business finances (MACIA: movimientos/auditoría). The backend is Google Sheets via Apps Script, so the build is **static** (no SSR). Package manager is **pnpm**; deploy target is **Vercel**.
+
+Originally a single-file vanilla app, it was modularized into ES modules and then migrated to Astro: the markup is split into `.astro` components, the domain logic lives in plain ES modules under `src/scripts/`, and the PWA is handled by `@vite-pwa/astro`.
 
 ## Development
 
-No build step. Open `index.html` directly in a browser or serve with any static file server:
-
 ```bash
-npx serve .
-# or
-python -m http.server
+pnpm install
+pnpm dev       # dev server (HMR) at http://localhost:4321
+pnpm build     # static build -> dist/  (also generates the PWA service worker)
+pnpm preview   # serve the production build
 ```
 
-The service worker only activates over HTTPS or `localhost`. On plain `file://` the SW is skipped and cache-first behaviour won't work, but the app still functions.
+The service worker is only generated on `build` (`devOptions.enabled: false`), so test PWA/offline behaviour with `pnpm build && pnpm preview`, not in dev.
 
 ## Architecture
 
-All application code is in a single `<script>` block inside `index.html`. Key pieces:
+```
+astro.config.mjs           output: 'static' + @vite-pwa/astro (manifest + SW)
+public/icon.svg            app icon (referenced by the manifest)
+GAS_SCRIPT.js              Apps Script backend source (not part of the build)
+src/
+  layouts/Layout.astro     <html>/<head> (PWA meta, fonts, manifest link),
+                           imports global.css + project.css, registers the SW
+  pages/index.astro        composes the components + the client <script>
+  components/*.astro        markup only (Header, MacvKpis, CobrosPanel, PagosPanel,
+                           SummaryPanel, MaciaKpis, MaciaMovimientos, MaciaAuditoria,
+                           MacvModal, MaciaModal, ConfirmModal)
+  styles/
+    global.css             reusable base (MacV convention): flex utilities, etc.
+    project.css            CollectTrack design tokens (:root) + ALL dynamic-content CSS
+  scripts/                 client-side ES modules (the domain logic; runs in the browser)
+    main.js                entry: imports modules, window shim, init
+    config.js state.js
+    lib/    format.js csv.js api.js storage.js
+    ui/     notify.js combo.js menus.js tabs.js
+    features/ collections.js expenses.js summary.js modal.js macia.js data.js
+```
 
-- **Data source** — a Google Sheets spreadsheet published as CSV. The URL is hardcoded in `CSV_URL` near the top of the script. Expected columns (case-insensitive): `NAME`, `CATEGORY`, `AMOUNT`, `DATE`.
-- **Amount format** — Colombian pesos with period as thousands separator (`$21.000`). `parseAmount()` strips `$` and `.` before parsing; `fmtAmount()` uses `toLocaleString('es-CO')` to re-format.
-- **Offline cache** — two independent caches:
-  - `localStorage` key `collecttrack_v1`: parsed row data (JSON), used to render stale data immediately on next load.
-  - Service worker cache `collecttrack-v1` (in `sw.js`): static shell files (`index.html`, `manifest.json`, `icon.svg`). Google Sheets requests bypass the SW and always hit the network.
-- **Category styling** — `CAT_STYLE` maps lowercase-slugified category keys to CSS class pairs (`badge` + `dot`). Any category not in the map falls back to `cat-default` / `dot-default`. To add a new category, add an entry to `CAT_STYLE` **and** the corresponding `.cat-*` / `.dot-*` CSS rules.
-- **Data flow**: `loadData()` → renders cache → fetches CSV → `parseCsv()` → `populateFilters()` + `applyFilters()` + `updateKPIs()` + `renderSummary()`.
+`src/scripts/` keeps the same internal `lib/ui/features` layout as the pre-Astro modular version, so the relative imports between modules are unchanged. `index.astro` loads it with a single `<script>import '../scripts/main.js'</script>` (Astro bundles it as a deferred module).
 
-## PWA update behaviour
+### Key patterns
 
-When `sw.js` or static assets change, bump the `CACHE` constant in `sw.js` (e.g. `collecttrack-v2`) so the activate handler evicts the old cache. Also bump `CACHE_KEY` in `index.html` if the localStorage data schema changes.
+- **Markup in components, logic in `src/scripts/`.** The `.astro` files are presentational and **preserve every `id="..."` and inline `onclick="fn(...)"`**. The JS modules query the DOM by id (e.g. `getElementById('tableBody')`), exactly as before — so the components and the logic stay decoupled but wired by id.
+- **`window` shim (bottom of `src/scripts/main.js`).** Module functions aren't global, but the markup (and the HTML that render functions build with `innerHTML`) uses inline `onclick`. `main.js` reexposes those functions on `window` via `Object.assign`. Add a new inline handler's function to that shim. (Natural place to remove if migrating to event delegation.)
+- **Shared state (`src/scripts/state.js`).** A single exported `state` object; modules read/write `state.allData`, `state.maciaTx`, etc. by reference (ES modules can't share reassignable `let` bindings).
+- **CSS: dynamic content must be global.** Render functions create rows/badges/chips/menus with `innerHTML`; those elements do **not** receive Astro's scoped `data-astro-*` attribute, so their styles live in `project.css` (global). Only static, structural styles unique to one component may use a scoped `<style>` (e.g. `.form-grid-2` in `MaciaModal.astro`). When adding styles for table rows, badges, combos, etc., put them in `project.css`.
+- **Category styling.** `CAT_STYLE` (in `src/scripts/lib/format.js`) maps slugified category keys to `.cat-*`/`.dot-*` pairs; unknown → `cat-default`. To add one: a `CAT_STYLE` entry **and** matching CSS rules in `project.css`.
+- **Data source.** Google Sheets via Apps Script (`API_URL`) with a published-CSV fallback (`CSV_URL`/`EXPENSES_URL`), all in `src/scripts/config.js`. Columns (case-insensitive): `NAME`, `CATEGORY`, `AMOUNT`, `DATE`.
+- **Amount format.** Colombian pesos, period as thousands separator (`$21.000`). `parseAmount()`/`fmtAmount()` in `src/scripts/lib/format.js`.
+- **Offline cache.** `localStorage` key `CACHE_KEY` (in `src/scripts/lib/storage.js`) for parsed rows; the Workbox service worker (generated by `@vite-pwa/astro`) precaches the static shell. Google Sheets / Apps Script requests are `NetworkOnly` (see `workbox.runtimeCaching` in `astro.config.mjs`).
+
+## PWA
+
+`@vite-pwa/astro` generates the manifest (`manifest.webmanifest`) and the Workbox service worker at build time. The manifest is defined in `astro.config.mjs`. Registration is wired **manually**: `injectRegister: false` in the config, a `<link rel="manifest">` in `Layout.astro`, and a `registerSW()` call (from `virtual:pwa-register`) in the Layout body script. `workbox-window` is a dependency required by that virtual module. When the shell changes, the SW updates automatically (`registerType: 'autoUpdate'`).
+
+## Deploy (Vercel)
+
+Static build; Vercel auto-detects Astro (build `astro build`, output `dist/`). No SSR adapter. No `vercel.json` is required.

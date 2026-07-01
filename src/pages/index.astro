@@ -1,0 +1,76 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import MacvKpis from '../components/MacvKpis.astro';
+import CobrosPanel from '../components/CobrosPanel.astro';
+import PagosPanel from '../components/PagosPanel.astro';
+import SummaryPanel from '../components/SummaryPanel.astro';
+import MaciaKpis from '../components/MaciaKpis.astro';
+import MaciaMovimientos from '../components/MaciaMovimientos.astro';
+import MaciaAuditoria from '../components/MaciaAuditoria.astro';
+import MacvModal from '../components/MacvModal.astro';
+import MaciaModal from '../components/MaciaModal.astro';
+import ConfirmModal from '../components/ConfirmModal.astro';
+---
+
+<Layout>
+  <Header />
+
+  <main>
+    <div class="error-bar" id="errorBar">
+      ⚠&nbsp; No se pudo cargar la hoja de cálculo. Verifica que el enlace esté publicado e inténtalo de nuevo.
+    </div>
+
+    <!-- Tab bar (grupos independientes) -->
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="macv" onclick="switchTab('macv')">MACV</button>
+      <button class="tab-btn tab-macia" data-tab="macia" onclick="switchTab('macia')">MACIA</button>
+    </div>
+
+    <!-- ── GRUPO: MACV ── -->
+    <div class="panel-view active" id="view-macv">
+      <MacvKpis />
+
+      <div class="macv-subtabs">
+        <button class="macv-subtab-btn active" data-subtab="cobros" onclick="switchMacvSubtab('cobros')">Cobros</button>
+        <button class="macv-subtab-btn" data-subtab="pagos" onclick="switchMacvSubtab('pagos')">Pagos</button>
+      </div>
+
+      <div class="macv-subview active" id="macv-sub-cobros">
+        <CobrosPanel />
+        <SummaryPanel gridId="summaryGrid" />
+      </div>
+
+      <div class="macv-subview" id="macv-sub-pagos">
+        <PagosPanel />
+        <SummaryPanel gridId="expSummaryGrid" />
+      </div>
+    </div>
+
+    <!-- ── GRUPO: MACIA ── -->
+    <div class="panel-view" id="view-macia">
+      <MaciaKpis />
+
+      <div class="macia-subtabs">
+        <button class="macia-subtab-btn active" data-subtab="movimientos" onclick="switchMaciaSubtab('movimientos')">Movimientos</button>
+        <button class="macia-subtab-btn" data-subtab="auditoria" onclick="switchMaciaSubtab('auditoria')">Auditoría</button>
+      </div>
+
+      <div class="macia-subview active" id="macia-sub-movimientos">
+        <MaciaMovimientos />
+      </div>
+
+      <div class="macia-subview" id="macia-sub-auditoria">
+        <MaciaAuditoria />
+      </div>
+    </div>
+  </main>
+
+  <MacvModal />
+  <MaciaModal />
+  <ConfirmModal />
+
+  <script>
+    import '../scripts/main.js';
+  </script>
+</Layout>

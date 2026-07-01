@@ -1,0 +1,19 @@
+{
+  "name": "collecttrack",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@vite-pwa/astro": "^1.2.0",
+    "astro": "^5.18.2"
+  },
+  "devDependencies": {
+    "workbox-window": "^7.4.1"
+  }
+}
