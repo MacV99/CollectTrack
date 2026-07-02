@@ -46,7 +46,28 @@ import '../styles/project.css';
     <script>
       // Registro del service worker generado por @vite-pwa/astro.
       import { registerSW } from 'virtual:pwa-register';
-      registerSW({ immediate: true });
+
+      registerSW({
+        immediate: true,
+        // Revisa si hay versión nueva cada 60s (para pestañas que quedan
+        // abiertas mucho tiempo, no solo al abrir la app).
+        onRegisteredSW(_swUrl, registration) {
+          if (registration) setInterval(() => registration.update(), 60_000);
+        },
+      });
+
+      // Cuando un SW NUEVO reemplaza al anterior (deploy nuevo), recarga UNA
+      // vez para servir el shell actualizado — sin Ctrl+Shift+R manual.
+      // No recarga en la primera instalación (cuando aún no había SW).
+      if ('serviceWorker' in navigator) {
+        const hadController = !!navigator.serviceWorker.controller;
+        let reloaded = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (reloaded || !hadController) return;
+          reloaded = true;
+          window.location.reload();
+        });
+      }
     </script>
   </body>
 </html>
