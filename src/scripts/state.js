@@ -9,6 +9,9 @@
    ============================================================ */
 
 export const state = {
+  // ── Sesión / rol activo ('admin' | 'socio' | null) ──
+  role: null,
+
   // ── MACV · Cobros ──
   allData: [],
   filteredData: [],

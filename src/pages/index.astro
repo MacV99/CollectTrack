@@ -14,9 +14,12 @@ import MacvModal from '../components/MacvModal.astro';
 import MaciaModal from '../components/MaciaModal.astro';
 import DeudaModal from '../components/DeudaModal.astro';
 import ConfirmModal from '../components/ConfirmModal.astro';
+import AuthGate from '../components/AuthGate.astro';
 ---
 
 <Layout>
+  <AuthGate />
+
   <Header />
 
   <main>

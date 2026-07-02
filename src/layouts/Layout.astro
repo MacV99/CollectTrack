@@ -29,6 +29,18 @@ import '../styles/project.css';
     />
   </head>
   <body>
+    <!-- Rol activo aplicado ANTES de pintar: evita que el socio vea MACV
+         un instante. role-none => se muestra el login (ver project.css). -->
+    <script is:inline>
+      (function () {
+        var r;
+        try { r = localStorage.getItem('ct_role'); } catch (e) { r = null; }
+        document.documentElement.classList.add(
+          r === 'admin' || r === 'socio' ? 'role-' + r : 'role-none'
+        );
+      })();
+    </script>
+
     <slot />
 
     <script>

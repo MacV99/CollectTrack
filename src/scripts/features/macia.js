@@ -241,6 +241,7 @@ export function renderMaciaAudit() {
 
 /* ── MODAL ────────────────────────────────────────────── */
 export function openMaciaModal(id) {
+  if (state.role === 'socio') return;   // socio: solo lectura
   state.maciaModalId = id || null;
   if (id) {
     const t = state.maciaTx.find(x => x.id === id);
@@ -286,6 +287,7 @@ export function closeMaciaModal() {
 }
 
 export function submitMaciaModal() {
+  if (state.role === 'socio') return;   // socio: solo lectura
   const date    = document.getElementById('mfDate').value.trim();
   const concept = document.getElementById('mfConcept').value.trim();
   const amount  = parseFloat(document.getElementById('mfAmount').value.replace(/\./g, '')) || 0;
@@ -330,6 +332,7 @@ export function submitMaciaModal() {
 
 /* ── DELETE ───────────────────────────────────────────── */
 export function deleteMaciaTx(id, row) {
+  if (state.role === 'socio') return;   // socio: solo lectura
   const t = state.maciaTx.find(x => x.id === id);
   if (!t) return;
   document.getElementById('confirmMsg').innerHTML =

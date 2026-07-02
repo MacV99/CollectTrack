@@ -1,0 +1,21 @@
+<!-- Overlay de login por PIN. Visible solo cuando <html> tiene role-none
+     (lo controla el CSS en project.css). Los estilos son globales allí. -->
+<div id="authGate">
+  <div class="auth-card">
+    <div class="auth-logo">Collect<em>Track</em></div>
+    <p class="auth-sub">Ingresa tu PIN</p>
+    <input
+      id="authPin"
+      class="auth-pin"
+      type="password"
+      inputmode="numeric"
+      pattern="[0-9]*"
+      maxlength="4"
+      autocomplete="off"
+      placeholder="••••"
+      onkeydown="if(event.key==='Enter')authLogin()"
+    />
+    <button class="auth-btn" onclick="authLogin()">Entrar</button>
+    <div class="auth-err" id="authErr"></div>
+  </div>
+</div>

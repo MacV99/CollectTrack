@@ -11,6 +11,7 @@ import { closeConfirm, closeModal, confirmDeleteExecute, deleteRow, openCreateMo
 import { state } from './state.js';
 import { loadTags, mergeTags } from './lib/storage.js';
 import { restoreTabs, switchMaciaSubtab, switchMacvSubtab, switchTab } from './ui/tabs.js';
+import { authLogin, initAuth, logout } from './features/auth.js';
 
 /* ── INIT MACIA ───────────────────────────────────────── */
 loadMaciaStorage();
@@ -55,8 +56,10 @@ Object.assign(window, {
   fmtAmountInput, importMaciaCsv, loadData,
   applyDebtFilters, sortDebtsBy, segSetDebt,
   openDebtModal, submitDebtModal, closeDebtModal, deleteDebt, toggleDebtStatus,
+  authLogin, logout,
 });
 
 /* ── INIT ───────────────────────────────────────────── */
 restoreTabs();
 loadData();
+initAuth();   // aplica rol guardado o muestra el login (fuerza MACIA si es socio)

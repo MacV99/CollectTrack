@@ -942,3 +942,93 @@ tbody td { padding: 15px 22px; font-size: 12px; vertical-align: middle; }
 
 /* Tab MACIA en acento púrpura (antes era style="" inline) */
 .tab-btn[data-tab="macia"] { color: #a78bfa; }
+
+/* ══════════════════════════════════════════════════════
+   ACCESO / ROLES  (login básico por PIN)
+   Clases en <html>: role-none (login), role-admin, role-socio.
+   ══════════════════════════════════════════════════════ */
+
+/* ── Overlay de login ─────────────────────────── */
+#authGate {
+  display: none;                       /* solo visible con role-none */
+  position: fixed; inset: 0; z-index: 500;
+  align-items: center; justify-content: center;
+  padding: 24px;
+  background: var(--bg);
+  background-image:
+    linear-gradient(rgba(0, 229, 160, .025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 229, 160, .025) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+html.role-none #authGate { display: flex; }
+/* Con role-none tapamos el resto; el overlay es opaco de todos modos. */
+html.role-none body > *:not(#authGate) { visibility: hidden; }
+
+.auth-card {
+  width: 100%; max-width: 320px;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 14px; padding: 34px 28px;
+  background: var(--surface); border: 1px solid var(--border-bright);
+  border-radius: 14px; text-align: center;
+}
+
+.auth-logo {
+  font-family: var(--font-display); font-weight: 800;
+  font-size: 22px; letter-spacing: -.4px;
+}
+.auth-logo em { font-style: normal; color: var(--accent); }
+
+.auth-sub { font-size: 12px; letter-spacing: .5px; color: var(--text-muted); }
+
+.auth-pin {
+  width: 100%; padding: 12px 14px;
+  background: var(--surface-2); border: 1px solid var(--border-bright);
+  border-radius: var(--radius); color: var(--text);
+  font-family: var(--font-mono); font-size: 20px; letter-spacing: 6px;
+  text-align: center; outline: none; transition: border-color var(--tr);
+}
+.auth-pin:focus { border-color: var(--accent); }
+
+.auth-btn {
+  width: 100%; padding: 11px 14px;
+  background: var(--accent); border: none; border-radius: var(--radius);
+  color: var(--bg); font-family: var(--font-display);
+  font-size: 12px; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; cursor: pointer; transition: opacity var(--tr);
+}
+
+.auth-err { min-height: 14px; font-size: 11px; color: var(--danger); }
+
+/* ── Chip de usuario + botón salir (header) ───── */
+.user-chip {
+  font-size: 10px; font-weight: 600; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--text-muted);
+  padding: 3px 9px; border: 1px solid var(--border-bright); border-radius: 999px;
+}
+.user-chip:empty { display: none; }
+
+.btn-logout {
+  padding: 7px 14px;
+  background: none; border: 1px solid var(--border-bright);
+  border-radius: var(--radius); color: var(--text-muted);
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: .5px;
+  cursor: pointer; transition: all var(--tr);
+}
+
+@media (hover: hover) {
+  .auth-btn:hover  { opacity: .85; }
+  .btn-logout:hover { color: var(--danger); border-color: var(--danger); }
+}
+
+/* ── Rol SOCIO: solo VER MACIA ────────────────── */
+/* Oculta la pestaña MACV y su vista por completo. */
+html.role-socio .tab-btn[data-tab="macv"] { display: none; }
+html.role-socio #view-macv { display: none !important; }
+/* La barra de tabs con una sola pestaña sobra: la escondemos. */
+html.role-socio .tabs { display: none; }
+/* Controles de edición fuera. */
+html.role-socio .btn-add,
+html.role-socio #btnRefresh,
+html.role-socio .td-actions,
+html.role-socio #macia-sub-movimientos thead th:last-child { display: none; }
