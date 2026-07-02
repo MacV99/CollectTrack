@@ -102,8 +102,8 @@ export function renderExpTable() {
       <td class="td-amount" data-label="Monto">${r.amountNum ? fmtAmount(r.amountNum) : '—'}</td>
       <td data-label="Día">${dateCell}</td>
       <td class="td-actions" data-label="Acciones">
-        ${payCheckBtn('pagos', i, r)}
-        ${rowMenu('pagos', i)}
+        ${payCheckBtn('pagos', r)}
+        ${rowMenu('pagos', r)}
       </td>
     </tr>`;
   }).join('');

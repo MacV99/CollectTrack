@@ -695,6 +695,18 @@ tbody td { padding: 15px 22px; font-size: 12px; vertical-align: middle; }
 .macv-subview        { display: none; }
 .macv-subview.active { display: block; }
 
+/* ── DEUDAS (préstamos ocasionales) ──────────────── */
+.debts-kpi-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 14px; margin-bottom: 22px;
+}
+@media (max-width: 640px) { .debts-kpi-grid { grid-template-columns: 1fr; } }
+
+.badge-pendiente { background: rgba(251,191,36,.13); color: #fbbf24; border: 1px solid rgba(251,191,36,.28); }
+.badge-pagada    { background: rgba(74,222,128,.13); color: #4ade80; border: 1px solid rgba(74,222,128,.28); }
+.dot-pendiente   { background: #fbbf24; }
+.dot-pagada      { background: #4ade80; }
+
 /* ── CREATABLE COMBO (etiquetas reutilizables) ───── */
 .combo { position: relative; }
 .combo-pop {
@@ -753,6 +765,14 @@ tbody td { padding: 15px 22px; font-size: 12px; vertical-align: middle; }
   .panel-head { padding: 12px 14px; }
   .filters { flex-direction: column; gap: 8px; padding: 12px 14px; }
   .filter-input, .filter-select { min-width: unset; width: 100%; flex: none; }
+
+  /* Cobros (MACV): en mobile solo queda el buscador por nombre — los
+     selects de categoría/día/estado se ocultan (el orden ya es fijo por
+     día y la lista suele ser corta, no hace falta filtrar más). */
+  #filterCategory, #filterDate, #filterStatus { display: none; }
+
+  /* Pagos (MACV): mismo criterio, sin buscador propio (no tiene nombre). */
+  #filterExpCategory, #filterExpDate, #filterExpStatus { display: none; }
 
   /* ── TABLE → CARDS ──────────────────────────── */
   /* On mobile the table collapses into stacked cards so no column is
@@ -856,6 +876,14 @@ tbody td { padding: 15px 22px; font-size: 12px; vertical-align: middle; }
   #maciaTableBody td:nth-child(4) { order: 5; }
   #maciaTableBody td:nth-child(5) { order: 6; }
   #maciaTableBody td:nth-child(6) { order: 7; flex: 1 1 100%; max-width: 100%; font-size: 11px; }
+
+  /* MACV · deudas → misma disposición que MACIA (fecha, persona, monto,
+     tipo, estado, nota, acciones) */
+  #debtsTableBody td:nth-child(1) { order: 4; flex: 0 0 auto; margin-left: auto; font-size: 12px; color: var(--text-muted); }
+  #debtsTableBody td:nth-child(3) { font-size: 18px; }
+  #debtsTableBody td:nth-child(4) { order: 5; }
+  #debtsTableBody td:nth-child(5) { order: 6; }
+  #debtsTableBody td:nth-child(6) { order: 7; flex: 1 1 100%; max-width: 100%; font-size: 11px; }
 
   /* MACIA · auditoría → fecha + acción en cabecera, detalle debajo */
   #maciaAuditBody td:nth-child(1) { order: 0; flex: 1 1 auto; }

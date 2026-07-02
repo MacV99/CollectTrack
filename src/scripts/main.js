@@ -5,6 +5,7 @@ import { loadData } from './features/data.js';
 import { applyExpFilters, sortExpBy } from './features/expenses.js';
 import { fmtAmountInput } from './lib/format.js';
 import { applyMaciaFilters, cargaInicialMacia, closeMaciaModal, deleteMaciaTx, importMaciaCsv, loadMaciaFromGAS, loadMaciaStorage, openMaciaModal, refreshMacia, segSet, sortMaciaBy, submitMaciaModal } from './features/macia.js';
+import { applyDebtFilters, closeDebtModal, deleteDebt, loadDebtsStorage, openDebtModal, refreshDebts, segSetDebt, sortDebtsBy, submitDebtModal, toggleDebtStatus } from './features/debts.js';
 import { toggleDayLabel, togglePaid, toggleRowMenu } from './ui/menus.js';
 import { closeConfirm, closeModal, confirmDeleteExecute, deleteRow, openCreateModal, openEditModal, submitModal } from './features/modal.js';
 import { state } from './state.js';
@@ -15,6 +16,10 @@ import { restoreTabs, switchMaciaSubtab, switchMacvSubtab, switchTab } from './u
 loadMaciaStorage();
 refreshMacia();
 loadMaciaFromGAS().then(() => cargaInicialMacia());
+
+/* ── INIT DEUDAS (solo local, sin Sheets) ─────────────── */
+loadDebtsStorage();
+refreshDebts();
 
 /* ── SERVICE WORKER ─────────────────────────────────── */
 // El registro del SW lo inyecta @vite-pwa/astro en el build (autoUpdate).
@@ -48,6 +53,8 @@ Object.assign(window, {
   togglePaid, toggleDayLabel, toggleRowMenu,
   openMaciaModal, submitMaciaModal, closeMaciaModal, deleteMaciaTx,
   fmtAmountInput, importMaciaCsv, loadData,
+  applyDebtFilters, sortDebtsBy, segSetDebt,
+  openDebtModal, submitDebtModal, closeDebtModal, deleteDebt, toggleDebtStatus,
 });
 
 /* ── INIT ───────────────────────────────────────────── */

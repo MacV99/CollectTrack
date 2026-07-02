@@ -20,6 +20,7 @@ export function switchMacvSubtab(sub) {
     b.classList.toggle('active', b.dataset.subtab === sub));
   document.getElementById('macv-sub-cobros').classList.toggle('active', sub === 'cobros');
   document.getElementById('macv-sub-pagos').classList.toggle('active',  sub === 'pagos');
+  document.getElementById('macv-sub-deudas').classList.toggle('active', sub === 'deudas');
   try { localStorage.setItem('ct_macv_subtab', sub); } catch {}
 }
 

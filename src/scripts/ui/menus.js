@@ -22,9 +22,9 @@ export const PAY_META = {
   overdue: { label: 'Atrasado',  dot: '#f87171' },
 };
 
-export function payCheckBtn(sheet, i, r) {
+export function payCheckBtn(sheet, r) {
   const on = payStatus(r) === 'paid';
-  return `<button class="btn-row check ${on ? 'on' : ''}" title="${on ? 'Marcar pendiente' : 'Marcar pagado'}" onclick="togglePaid('${sheet}',${i})">✓</button>`;
+  return `<button class="btn-row check ${on ? 'on' : ''}" title="${on ? 'Marcar pendiente' : 'Marcar pagado'}" onclick="togglePaid('${sheet}',${r._row})">✓</button>`;
 }
 
 // Due-day shown as a calendar pill. Its color reflects the pay status, and
@@ -57,10 +57,10 @@ export function closeDayTips() {
 }
 
 // Edit + delete grouped behind a ⋮ kebab menu.
-export function rowMenu(sheet, i) {
+export function rowMenu(sheet, r) {
   return buildRowMenu([
-    { onclick: `openEditModal('${sheet}',${i})`, icon: ROW_MENU_ICONS.pencil, label: 'Editar' },
-    { onclick: `deleteRow('${sheet}',${i})`, icon: ROW_MENU_ICONS.trash, label: 'Eliminar', danger: true },
+    { onclick: `openEditModal('${sheet}',${r._row})`, icon: ROW_MENU_ICONS.pencil, label: 'Editar' },
+    { onclick: `deleteRow('${sheet}',${r._row})`, icon: ROW_MENU_ICONS.trash, label: 'Eliminar', danger: true },
   ]);
 }
 
@@ -81,12 +81,11 @@ document.addEventListener('click', () => {
 /* ── TOGGLE PAID ────────────────────────────────────── */
 // Marca / desmarca un registro como pagado en el periodo actual.
 // Optimista: actualiza local + caché, sincroniza PAID en la hoja vía GAS.
-export function togglePaid(sheet, index) {
+export function togglePaid(sheet, rowNum) {
   if (!API_URL) { showNotification('Configura API_URL primero', 'err'); return; }
 
-  const { r, allArr, allIdx } = resolveRow(sheet, index);
-  if (!r) return;
-  if (!r._row) { showNotification('Actualiza antes de marcar', 'err'); return; }
+  const { r, allArr, allIdx } = resolveRow(sheet, rowNum);
+  if (!r) { showNotification('Actualiza antes de marcar', 'err'); return; }
 
   const period = currentPeriod();
   const newVal = (r.paid === period) ? '' : period;  // toggle

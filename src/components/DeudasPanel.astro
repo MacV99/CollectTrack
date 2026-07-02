@@ -1,0 +1,43 @@
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Deudas</span>
+            <div class="panel-head-right">
+              <span class="row-count">mostrando <b id="debtsVisibleCount">0</b> de <b id="debtsTotalCount">0</b></span>
+              <button class="btn-add" onclick="openDebtModal()">
+                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="6" y1="1" x2="6" y2="11"/><line x1="1" y1="6" x2="11" y2="6"/></svg>
+                Nueva
+              </button>
+            </div>
+          </div>
+          <div class="filters">
+            <input class="filter-input" id="debtFilterSearch" type="text" placeholder="Buscar persona o nota…" oninput="applyDebtFilters()" />
+            <select class="filter-select" id="debtFilterType" onchange="applyDebtFilters()">
+              <option value="">Todos los tipos</option>
+              <option value="me_deben">Me deben</option>
+              <option value="yo_debo">Yo debo</option>
+            </select>
+            <select class="filter-select" id="debtFilterStatus" onchange="applyDebtFilters()">
+              <option value="">Todos los estados</option>
+              <option value="pendiente">Pendientes</option>
+              <option value="pagada">Pagadas</option>
+            </select>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th onclick="sortDebtsBy('date')">Fecha <span class="sort-arrow" id="dsa-date">↓</span></th>
+                  <th onclick="sortDebtsBy('person')">Persona <span class="sort-arrow" id="dsa-person">↕</span></th>
+                  <th onclick="sortDebtsBy('amount')">Monto <span class="sort-arrow" id="dsa-amount">↕</span></th>
+                  <th class="no-sort">Tipo</th>
+                  <th class="no-sort">Estado</th>
+                  <th class="no-sort">Nota</th>
+                  <th class="no-sort"></th>
+                </tr>
+              </thead>
+              <tbody id="debtsTableBody">
+                <tr class="state-row"><td colspan="7">No hay deudas registradas. Agrega una con el botón +</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>

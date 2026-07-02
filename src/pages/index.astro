@@ -5,11 +5,14 @@ import MacvKpis from '../components/MacvKpis.astro';
 import CobrosPanel from '../components/CobrosPanel.astro';
 import PagosPanel from '../components/PagosPanel.astro';
 import SummaryPanel from '../components/SummaryPanel.astro';
+import DeudasKpis from '../components/DeudasKpis.astro';
+import DeudasPanel from '../components/DeudasPanel.astro';
 import MaciaKpis from '../components/MaciaKpis.astro';
 import MaciaMovimientos from '../components/MaciaMovimientos.astro';
 import MaciaAuditoria from '../components/MaciaAuditoria.astro';
 import MacvModal from '../components/MacvModal.astro';
 import MaciaModal from '../components/MaciaModal.astro';
+import DeudaModal from '../components/DeudaModal.astro';
 import ConfirmModal from '../components/ConfirmModal.astro';
 ---
 
@@ -34,6 +37,7 @@ import ConfirmModal from '../components/ConfirmModal.astro';
       <div class="macv-subtabs">
         <button class="macv-subtab-btn active" data-subtab="cobros" onclick="switchMacvSubtab('cobros')">Cobros</button>
         <button class="macv-subtab-btn" data-subtab="pagos" onclick="switchMacvSubtab('pagos')">Pagos</button>
+        <button class="macv-subtab-btn" data-subtab="deudas" onclick="switchMacvSubtab('deudas')">Deudas</button>
       </div>
 
       <div class="macv-subview active" id="macv-sub-cobros">
@@ -44,6 +48,11 @@ import ConfirmModal from '../components/ConfirmModal.astro';
       <div class="macv-subview" id="macv-sub-pagos">
         <PagosPanel />
         <SummaryPanel gridId="expSummaryGrid" />
+      </div>
+
+      <div class="macv-subview" id="macv-sub-deudas">
+        <DeudasKpis />
+        <DeudasPanel />
       </div>
     </div>
 
@@ -68,6 +77,7 @@ import ConfirmModal from '../components/ConfirmModal.astro';
 
   <MacvModal />
   <MaciaModal />
+  <DeudaModal />
   <ConfirmModal />
 
   <script>

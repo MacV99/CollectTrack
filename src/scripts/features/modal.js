@@ -4,6 +4,7 @@ import { API_URL } from '../config.js';
 import { loadData, refreshAll } from './data.js';
 import { fmtAmount } from '../lib/format.js';
 import { closeMaciaModal, loadMaciaFromGAS, maciaLog, refreshMacia, saveMacia } from './macia.js';
+import { refreshDebts, saveDebts } from './debts.js';
 import { closeDayTips } from '../ui/menus.js';
 import { showNotification } from '../ui/notify.js';
 import { resolveRow, state } from '../state.js';
@@ -22,7 +23,7 @@ document.addEventListener('keydown', e => {
 export function openCreateModal(sheet) {
   if (!API_URL) { showNotification('Configura API_URL primero', 'err'); return; }
   state.modalSheet = sheet;
-  state.modalIndex = null;
+  state.modalRow = null;
   document.getElementById('modalTitle').textContent      = sheet === 'cobros' ? 'Nuevo cobro' : 'Nuevo pago';
   document.getElementById('fieldName').style.display     = sheet === 'cobros' ? '' : 'none';
   document.getElementById('fName').value                 = '';
@@ -34,11 +35,12 @@ export function openCreateModal(sheet) {
   _showModal();
 }
 
-export function openEditModal(sheet, index) {
+export function openEditModal(sheet, rowNum) {
   if (!API_URL) { showNotification('Configura API_URL primero', 'err'); return; }
+  const { r } = resolveRow(sheet, rowNum);
+  if (!r) { showNotification('Actualiza antes de editar', 'err'); return; }
   state.modalSheet = sheet;
-  state.modalIndex = index;
-  const { r } = resolveRow(sheet, index);
+  state.modalRow = rowNum;
   document.getElementById('modalTitle').textContent      = sheet === 'cobros' ? 'Editar cobro' : 'Editar pago';
   document.getElementById('fieldName').style.display     = sheet === 'cobros' ? '' : 'none';
   if (sheet === 'cobros') document.getElementById('fName').value = r.name || '';
@@ -82,7 +84,7 @@ export async function submitModal() {
   btn.disabled    = true;
   btn.textContent = 'Guardando…';
 
-  if (state.modalIndex === null) {
+  if (state.modalRow === null) {
     // ── CREATE ───────────────────────────────────────
     const newItem = state.modalSheet === 'cobros'
       ? { _row: null, name, category, amountNum: amount, rawAmount: fmtAmount(amount), date, paid: '' }
@@ -106,7 +108,8 @@ export async function submitModal() {
 
   } else {
     // ── UPDATE ───────────────────────────────────────
-    const { r, allArr, allIdx } = resolveRow(state.modalSheet, state.modalIndex);
+    const { r, allArr, allIdx } = resolveRow(state.modalSheet, state.modalRow);
+    if (!r) { showNotification('Actualiza antes de guardar', 'err'); closeModal(); return; }
 
     const updated = state.modalSheet === 'cobros'
       ? { ...r, name, category, amountNum: amount, rawAmount: fmtAmount(amount), date }
@@ -128,15 +131,16 @@ export async function submitModal() {
   }
 }
 
-export function deleteRow(sheet, index) {
+export function deleteRow(sheet, rowNum) {
   if (!API_URL) { showNotification('Configura API_URL primero', 'err'); return; }
-  const { r } = resolveRow(sheet, index);
+  const { r } = resolveRow(sheet, rowNum);
+  if (!r) { showNotification('Actualiza antes de eliminar', 'err'); return; }
   const label = sheet === 'cobros'
     ? (r.name || 'este cobro')
     : (r.category || 'este pago');
   document.getElementById('confirmMsg').innerHTML =
     `¿Eliminar <b style="color:var(--text)">${label}</b>?<br><span style="color:var(--text-muted);font-size:11px">Esta acción no se puede deshacer.</span>`;
-  state._pendingDelete = { sheet, index };
+  state._pendingDelete = { sheet, row: rowNum };
   document.getElementById('confirmBackdrop').style.display = 'block';
   document.getElementById('confirmModal').style.display    = 'flex';
 }
@@ -146,9 +150,19 @@ export function closeConfirm() {
   document.getElementById('confirmModal').style.display    = 'none';
   state._pendingDelete      = null;
   state._pendingMaciaDelete = null;
+  state._pendingDebtDelete  = null;
 }
 
 export function confirmDeleteExecute() {
+  if (state._pendingDebtDelete !== null) {
+    const { id } = state._pendingDebtDelete;
+    closeConfirm();
+    state.debts = state.debts.filter(x => x.id !== id);
+    saveDebts();
+    refreshDebts();
+    showNotification('Eliminado ✓');
+    return;
+  }
   if (state._pendingMaciaDelete !== null) {
     const { id, row } = state._pendingMaciaDelete;
     closeConfirm();
@@ -167,10 +181,11 @@ export function confirmDeleteExecute() {
     return;
   }
   if (!state._pendingDelete) return;
-  const { sheet, index } = state._pendingDelete;
+  const { sheet, row } = state._pendingDelete;
   closeConfirm();
 
-  const { r, allArr, allIdx } = resolveRow(sheet, index);
+  const { r, allArr, allIdx } = resolveRow(sheet, row);
+  if (!r) { showNotification('Actualiza antes de eliminar', 'err'); return; }
   const rowNum = r._row;
 
   allArr.splice(allIdx, 1);

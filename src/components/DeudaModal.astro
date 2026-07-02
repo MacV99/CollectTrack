@@ -1,0 +1,39 @@
+<div class="modal-backdrop" id="debtBackdrop" onclick="closeDebtModal()"></div>
+<div class="modal" id="debtModal">
+  <div class="modal-header">
+    <span class="modal-title" id="debtModalTitle">Nueva deuda</span>
+    <button class="modal-close" onclick="closeDebtModal()">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="form-grid-2">
+      <div class="form-group">
+        <label class="form-label">Persona</label>
+        <input class="form-control" id="dfPerson" type="text" placeholder="¿Quién?" autocomplete="off" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Monto</label>
+        <input class="form-control" id="dfAmount" type="text" inputmode="numeric" placeholder="ej: 50.000" oninput="fmtAmountInput(this)" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Tipo</label>
+      <div class="seg" id="segDebtType" data-input="dfType">
+        <button type="button" class="seg-btn" data-val="me_deben" onclick="segSetDebt(this)"><span class="dot dot-ingreso"></span>Me deben</button>
+        <button type="button" class="seg-btn" data-val="yo_debo" onclick="segSetDebt(this)"><span class="dot dot-egreso"></span>Yo debo</button>
+      </div>
+      <input type="hidden" id="dfType" value="me_deben" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Fecha</label>
+      <input class="form-control" id="dfDate" type="date" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nota</label>
+      <textarea class="form-control form-control-textarea" id="dfNote" placeholder="Motivo, forma de pago acordada…"></textarea>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-cancel" onclick="closeDebtModal()">Cancelar</button>
+    <button class="btn-save" id="debtBtnSave" onclick="submitDebtModal()">Guardar</button>
+  </div>
+</div>

@@ -112,6 +112,20 @@ function readSheet(name) {
     .filter(r => headers.some(h => r[h] !== '' && r[h] !== null && r[h] !== undefined));
 }
 
+// Mapea encabezado (mayúsculas) → columna 1-based, leyendo la fila 1 real.
+// Create/update escriben por este mapa en vez de por la posición asumida en
+// SHEET_COLS: si el orden físico de columnas en la hoja no coincide con
+// SHEET_COLS, escribir por posición fija mezcla los valores entre columnas
+// (p. ej. AMOUNT y CATEGORY intercambiados).
+function getHeaderMap(sheet) {
+  const lastCol = sheet.getLastColumn();
+  const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0]
+    .map(h => String(h).toUpperCase().trim());
+  const map = {};
+  headers.forEach((h, j) => { if (h) map[h] = j + 1; }); // 1-based
+  return map;
+}
+
 // ── CREATE ───────────────────────────────────────────────────────────────────
 function rowCreate(sheetName, p) {
   const sheet = SS.getSheetByName(sheetName);
@@ -120,14 +134,16 @@ function rowCreate(sheetName, p) {
   const cols = SHEET_COLS[sheetName];
   if (!cols)  return { ok: false, error: 'Hoja no configurada: ' + sheetName };
 
+  const colMap  = getHeaderMap(sheet);
+  const rowNum  = sheet.getLastRow() + 1;
   // Los parámetros llegan como texto (JSONP/GET); AMOUNT debe quedar numérico.
-  const row = cols.map(col => {
+  cols.forEach(col => {
+    if (!colMap[col]) return;
     let v = p[col] !== undefined ? p[col] : '';
     if (col === 'AMOUNT' && v !== '') v = Number(v) || 0;
-    return v;
+    sheet.getRange(rowNum, colMap[col]).setValue(v);
   });
-  sheet.appendRow(row);
-  return { ok: true, _row: sheet.getLastRow() };
+  return { ok: true, _row: rowNum };
 }
 
 // ── UPDATE ───────────────────────────────────────────────────────────────────
@@ -139,14 +155,16 @@ function rowUpdate(sheetName, p) {
   const cols = SHEET_COLS[sheetName];
   if (!cols)  return { ok: false, error: 'Hoja no configurada: ' + sheetName };
 
+  const colMap = getHeaderMap(sheet);
   const rowNum = Number(p._row);
-  cols.forEach((col, j) => {
+  cols.forEach(col => {
     // ID y CREATED_AT no se sobreescriben en una edición.
     if (col === 'ID' || col === 'CREATED_AT') return;
     if (p[col] === undefined) return;
+    if (!colMap[col]) return;
     let v = p[col];
     if (col === 'AMOUNT' && v !== '') v = Number(v) || 0;
-    sheet.getRange(rowNum, j + 1).setValue(v);
+    sheet.getRange(rowNum, colMap[col]).setValue(v);
   });
 
   return { ok: true };

@@ -16,6 +16,11 @@ export function mapIncomeRow(r) {
   };
 }
 
+// En mobile la tabla colapsa a tarjetas y el thead (con el sort de Día) se
+// oculta (ver project.css @media max-width:640px) — sin control de orden a
+// la vista, el orden queda fijo: día ascendente.
+const mobileQuery = window.matchMedia('(max-width: 640px)');
+
 /* ── INCOME FILTERS ─────────────────────────────────── */
 export function populateFilters() {
   const cats  = [...new Set(state.allData.map(r => r.category).filter(Boolean))].sort();
@@ -44,42 +49,45 @@ export function applyFilters() {
     return true;
   });
 
-  // Por defecto (sin columna elegida): último movimiento agregado primero.
-  // state.allData/state.allExpenses están en orden de hoja (antiguos→nuevos, los nuevos
-  // se agregan al final), así que invertir deja lo más reciente arriba.
-  if (state.sortCol) sortFiltered();
-  else state.filteredData.reverse();
+  if (mobileQuery.matches) {
+    state.filteredData.sort((a, b) => (+a.date || 0) - (+b.date || 0));
+  } else if (state.sortCol) {
+    sortFiltered();
+  } else {
+    // Por defecto (sin columna elegida): último movimiento agregado primero.
+    // state.allData/state.allExpenses están en orden de hoja (antiguos→nuevos, los nuevos
+    // se agregan al final), así que invertir deja lo más reciente arriba.
+    state.filteredData.reverse();
+  }
   renderTable();
 }
 
-/* ── INCOME SORT ────────────────────────────────────── */
-const SORT_COLS = ['name', 'category', 'amount', 'date'];
+// Re-aplica el orden al cruzar el breakpoint (rotar el dispositivo, resize
+// de ventana), para que "mobile = siempre por día" se cumpla sin recargar.
+mobileQuery.addEventListener('change', applyFilters);
 
+/* ── INCOME SORT ────────────────────────────────────── */
+// Único orden disponible en Cobros: por día (el resto de columnas no se
+// pueden ordenar, ver CobrosPanel.astro).
 export function sortBy(col) {
+  if (col !== 'date') return;
   state.sortDir = (state.sortCol === col && state.sortDir === 'asc') ? 'desc' : 'asc';
   state.sortCol = col;
 
-  document.querySelectorAll('thead th').forEach((th, i) => {
-    if (th.closest('#macv-sub-cobros')) th.classList.toggle('active', SORT_COLS[i] === col);
-  });
-  SORT_COLS.forEach(c => { const el = document.getElementById(`sa-${c}`); if (el) el.textContent = '↕'; });
-  const arrow = document.getElementById(`sa-${col}`);
-  if (arrow) arrow.textContent = state.sortDir === 'asc' ? '↑' : '↓';
+  const arrow = document.getElementById('sa-date');
+  if (arrow) {
+    arrow.textContent = state.sortDir === 'asc' ? '↑' : '↓';
+    arrow.closest('th').classList.add('active');
+  }
 
   sortFiltered();
   renderTable();
 }
 
 export function sortFiltered() {
+  if (state.sortCol !== 'date') return;
   state.filteredData.sort((a, b) => {
-    let va, vb;
-    switch (state.sortCol) {
-      case 'amount':   va = a.amountNum;            vb = b.amountNum;            break;
-      case 'date':     va = +a.date || 0;           vb = +b.date || 0;           break;
-      case 'name':     va = a.name.toLowerCase();   vb = b.name.toLowerCase();   break;
-      case 'category': va = a.category.toLowerCase(); vb = b.category.toLowerCase(); break;
-      default: return 0;
-    }
+    const va = +a.date || 0, vb = +b.date || 0;
     if (va < vb) return state.sortDir === 'asc' ? -1 : 1;
     if (va > vb) return state.sortDir === 'asc' ?  1 : -1;
     return 0;
@@ -112,8 +120,8 @@ export function renderTable() {
       <td class="td-amount" data-label="Monto">${r.rawAmount || '—'}</td>
       <td data-label="Categoría">${catCell}</td>
       <td class="td-actions" data-label="Acciones">
-        ${payCheckBtn('cobros', i, r)}
-        ${rowMenu('cobros', i)}
+        ${payCheckBtn('cobros', r)}
+        ${rowMenu('cobros', r)}
       </td>
     </tr>`;
   }).join('');
