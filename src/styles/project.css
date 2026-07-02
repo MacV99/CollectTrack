@@ -92,7 +92,9 @@ header {
   cursor: pointer; transition: all var(--tr);
 }
 
-.btn-refresh:hover { background: var(--accent); color: var(--bg); }
+@media (hover: hover) {
+  .btn-refresh:hover { background: var(--accent); color: var(--bg); }
+}
 
 .btn-refresh.loading .ico-refresh { animation: spin .8s linear infinite; }
 
@@ -137,7 +139,10 @@ main { max-width: 1160px; margin: 0 auto; padding: 36px 32px; }
 }
 
 .kpi.negative::after { background: var(--danger); }
-.kpi:hover::after    { transform: scaleX(1); }
+
+@media (hover: hover) {
+  .kpi:hover::after { transform: scaleX(1); }
+}
 
 .kpi-label {
   font-size: 9px; letter-spacing: 1.6px; text-transform: uppercase;
@@ -195,7 +200,9 @@ main { max-width: 1160px; margin: 0 auto; padding: 36px 32px; }
   cursor: pointer; transition: all var(--tr);
 }
 
-.btn-add:hover { background: var(--accent); color: var(--bg); }
+@media (hover: hover) {
+  .btn-add:hover { background: var(--accent); color: var(--bg); }
+}
 
 /* ── FILTERS ────────────────────────────────── */
 .filters {
@@ -232,10 +239,13 @@ thead th {
   transition: color var(--tr);
 }
 
-thead th:hover    { color: var(--text-dim); }
 thead th.active   { color: var(--accent); }
 thead th.no-sort  { cursor: default; }
-thead th.no-sort:hover { color: var(--text-muted); }
+
+@media (hover: hover) {
+  thead th:hover    { color: var(--text-dim); }
+  thead th.no-sort:hover { color: var(--text-muted); }
+}
 
 .sort-arrow { margin-left: 4px; opacity: .45; }
 thead th.active .sort-arrow { opacity: 1; }
@@ -248,13 +258,14 @@ tbody tr {
 }
 
 tbody tr:last-child { border-bottom: none; }
-tbody tr:hover { background: rgba(255, 255, 255, .022); }
 
 /* The fade-in opacity makes each row its own stacking context, which would
    trap the date tooltip behind the next row. Lift the active row above its
    siblings so the tooltip can overflow freely. */
 tbody tr.tip-open { z-index: 20; }
-@media (hover: hover) { tbody tr:hover { z-index: 20; } }
+@media (hover: hover) {
+  tbody tr:hover { background: rgba(255, 255, 255, .022); z-index: 20; }
+}
 
 tbody td { padding: 15px 22px; font-size: 12px; vertical-align: middle; }
 
@@ -283,12 +294,15 @@ tbody td { padding: 15px 22px; font-size: 12px; vertical-align: middle; }
   transition: all var(--tr);
 }
 
-.btn-row:hover         { border-color: var(--border-bright); color: var(--text); }
-.btn-row.edit:hover    { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
-.btn-row.del:hover     { border-color: var(--danger); color: var(--danger); background: var(--danger-dim); }
 .btn-row + .btn-row    { margin-left: 5px; }
 .btn-row.menu svg      { width: 17px; height: 17px; }
-.btn-row.menu:hover    { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+
+@media (hover: hover) {
+  .btn-row:hover         { border-color: var(--border-bright); color: var(--text); }
+  .btn-row.edit:hover    { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+  .btn-row.del:hover     { border-color: var(--danger); color: var(--danger); background: var(--danger-dim); }
+  .btn-row.menu:hover    { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+}
 
 /* ── ROW KEBAB MENU ──────────────────────────── */
 .row-menu { position: relative; display: inline-flex; }
@@ -307,9 +321,12 @@ tbody td { padding: 15px 22px; font-size: 12px; vertical-align: middle; }
   cursor: pointer; text-align: left; transition: background var(--tr), color var(--tr);
 }
 .row-menu-pop button svg { width: 14px; height: 14px; flex-shrink: 0; }
-.row-menu-pop button:hover { background: rgba(255, 255, 255, .05); color: var(--text); }
 .row-menu-pop button.danger { color: var(--danger); }
-.row-menu-pop button.danger:hover { background: var(--danger-dim); }
+
+@media (hover: hover) {
+  .row-menu-pop button:hover { background: rgba(255, 255, 255, .05); color: var(--text); }
+  .row-menu-pop button.danger:hover { background: var(--danger-dim); }
+}
 
 /* ── BADGES ─────────────────────────────────── */
 .badge {
@@ -387,8 +404,11 @@ tbody td { padding: 15px 22px; font-size: 12px; vertical-align: middle; }
 
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
 
-.btn-row.check:hover { border-color: #4ade80; color: #4ade80; background: rgba(34,197,94,.10); }
 .btn-row.check.on    { border-color: #4ade80; color: #4ade80; background: rgba(34,197,94,.14); }
+
+@media (hover: hover) {
+  .btn-row.check:hover { border-color: #4ade80; color: #4ade80; background: rgba(34,197,94,.10); }
+}
 
 /* ── EMPTY / LOADING ────────────────────────── */
 .state-row td {
@@ -423,7 +443,9 @@ tbody td { padding: 15px 22px; font-size: 12px; vertical-align: middle; }
   transition: border-color var(--tr);
 }
 
-.sum-card:hover { border-color: var(--border-bright); }
+@media (hover: hover) {
+  .sum-card:hover { border-color: var(--border-bright); }
+}
 
 .sum-head { display: flex; align-items: center; gap: 8px; margin-bottom: 11px; }
 
@@ -456,8 +478,11 @@ tbody td { padding: 15px 22px; font-size: 12px; vertical-align: middle; }
   transition: color var(--tr), border-color var(--tr);
 }
 
-.tab-btn:hover { color: var(--text-dim); }
 .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+@media (hover: hover) {
+  .tab-btn:hover { color: var(--text-dim); }
+}
 
 .panel-view        { display: none; }
 .panel-view.active { display: block; }
@@ -498,7 +523,9 @@ tbody td { padding: 15px 22px; font-size: 12px; vertical-align: middle; }
   transition: all var(--tr);
 }
 
-.modal-close:hover { border-color: var(--danger); color: var(--danger); }
+@media (hover: hover) {
+  .modal-close:hover { border-color: var(--danger); color: var(--danger); }
+}
 
 .modal-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; }
 
@@ -533,7 +560,9 @@ tbody td { padding: 15px 22px; font-size: 12px; vertical-align: middle; }
   font-size: 12px; cursor: pointer; transition: all var(--tr);
 }
 
-.btn-cancel:hover { border-color: var(--border-bright); color: var(--text); }
+@media (hover: hover) {
+  .btn-cancel:hover { border-color: var(--border-bright); color: var(--text); }
+}
 
 .btn-save {
   padding: 9px 22px;
@@ -544,8 +573,11 @@ tbody td { padding: 15px 22px; font-size: 12px; vertical-align: middle; }
   transition: opacity var(--tr);
 }
 
-.btn-save:hover    { opacity: .85; }
 .btn-save:disabled { opacity: .4; cursor: not-allowed; }
+
+@media (hover: hover) {
+  .btn-save:hover { opacity: .85; }
+}
 
 /* ── CONFIRM MODAL ──────────────────────────── */
 .confirm-modal {
@@ -600,7 +632,9 @@ tbody td { padding: 15px 22px; font-size: 12px; vertical-align: middle; }
   text-align: center;
 }
 
-.btn-delete:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+@media (hover: hover) {
+  .btn-delete:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+}
 
 /* ── NOTIF PILL ─────────────────────────────── */
 #notif-pill {
@@ -647,8 +681,11 @@ tbody td { padding: 15px 22px; font-size: 12px; vertical-align: middle; }
   text-transform: uppercase; cursor: pointer; margin-bottom: -1px;
   transition: color var(--tr), border-color var(--tr);
 }
-.macia-subtab-btn:hover  { color: var(--text-dim); }
 .macia-subtab-btn.active { color: #a78bfa; border-bottom-color: #a78bfa; }
+
+@media (hover: hover) {
+  .macia-subtab-btn:hover { color: var(--text-dim); }
+}
 
 .macia-subview        { display: none; }
 .macia-subview.active { display: block; }
@@ -663,7 +700,9 @@ tbody td { padding: 15px 22px; font-size: 12px; vertical-align: middle; }
   font-size: 11px; font-weight: 600; letter-spacing: .4px;
   cursor: pointer; transition: all var(--tr);
 }
-.btn-import:hover { background: #a78bfa; color: var(--bg); }
+@media (hover: hover) {
+  .btn-import:hover { background: #a78bfa; color: var(--bg); }
+}
 
 .audit-action {
   display: inline-flex; align-items: center; gap: 5px;
@@ -690,8 +729,11 @@ tbody td { padding: 15px 22px; font-size: 12px; vertical-align: middle; }
   text-transform: uppercase; cursor: pointer; margin-bottom: -1px;
   transition: color var(--tr), border-color var(--tr);
 }
-.macv-subtab-btn:hover  { color: var(--text-dim); }
 .macv-subtab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+@media (hover: hover) {
+  .macv-subtab-btn:hover { color: var(--text-dim); }
+}
 .macv-subview        { display: none; }
 .macv-subview.active { display: block; }
 
@@ -723,13 +765,18 @@ tbody td { padding: 15px 22px; font-size: 12px; vertical-align: middle; }
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   transition: background var(--tr), color var(--tr);
 }
-.combo-option:hover, .combo-option.active { background: rgba(255, 255, 255, .05); color: var(--text); }
+.combo-option.active { background: rgba(255, 255, 255, .05); color: var(--text); }
 .combo-create { color: var(--accent); display: flex; align-items: center; gap: 2px; }
 .combo-create b { font-weight: 700; }
-.combo-create:hover, .combo-create.active { background: var(--accent-dim); }
+.combo-create.active { background: var(--accent-dim); }
 .combo-empty { color: var(--text-muted); cursor: default; }
 .combo { width: 100%; }
 .combo .form-control { width: 100%; }
+
+@media (hover: hover) {
+  .combo-option:hover { background: rgba(255, 255, 255, .05); color: var(--text); }
+  .combo-create:hover { background: var(--accent-dim); }
+}
 
 /* ── SEGMENTED TOGGLE (tipo / cuenta) ────────────── */
 .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
@@ -741,8 +788,11 @@ tbody td { padding: 15px 22px; font-size: 12px; vertical-align: middle; }
   font-family: var(--font-mono); font-size: 13px; font-weight: 600;
   cursor: pointer; transition: all var(--tr);
 }
-.seg-btn:hover { border-color: var(--border-bright); color: var(--text); }
 .seg-btn .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+@media (hover: hover) {
+  .seg-btn:hover { border-color: var(--border-bright); color: var(--text); }
+}
 .seg-btn[data-val="ingreso"].active { color: #4ade80; border-color: rgba(74, 222, 128, .5);  background: rgba(74, 222, 128, .12); }
 .seg-btn[data-val="egreso"].active  { color: #f87171; border-color: rgba(248, 113, 113, .5); background: rgba(248, 113, 113, .12); }
 .seg-btn[data-val="nu"].active      { color: #a78bfa; border-color: rgba(167, 139, 250, .5); background: rgba(167, 139, 250, .12); }
@@ -793,7 +843,6 @@ tbody td { padding: 15px 22px; font-size: 12px; vertical-align: middle; }
     margin-bottom: 10px;
   }
   tbody tr:last-child { margin-bottom: 4px; }
-  tbody tr:hover { background: var(--surface-2); }
 
   /* status rail — colored left edge for instant at-a-glance scanning */
   tbody tr[data-status="paid"]    { box-shadow: inset 3px 0 0 0 #4ade80; }
