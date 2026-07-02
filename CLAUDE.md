@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-CollectTrack is an **Astro** PWA for tracking personal payment collections (MACV: cobros/pagos) and business finances (MACIA: movimientos/auditoría). The backend is Google Sheets via Apps Script, so the build is **static** (no SSR). Package manager is **pnpm**; deploy target is **Vercel**.
+CollectTrack is an **Astro** PWA for tracking personal payment collections (MACV: cobros/pagos) and business finances (MACIA: movimientos). The backend is Google Sheets via Apps Script, so the build is **static** (no SSR). Package manager is **pnpm**; deploy target is **Vercel**.
 
 Originally a single-file vanilla app, it was modularized into ES modules and then migrated to Astro: the markup is split into `.astro` components, the domain logic lives in plain ES modules under `src/scripts/`, and the PWA is handled by `@vite-pwa/astro`.
 
@@ -30,7 +30,7 @@ src/
                            imports global.css + project.css, registers the SW
   pages/index.astro        composes the components + the client <script>
   components/*.astro        markup only (Header, MacvKpis, CobrosPanel, PagosPanel,
-                           SummaryPanel, MaciaKpis, MaciaMovimientos, MaciaAuditoria,
+                           SummaryPanel, MaciaKpis, MaciaMovimientos,
                            MacvModal, MaciaModal, ConfirmModal)
   styles/
     global.css             reusable base (MacV convention): flex utilities, etc.

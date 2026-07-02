@@ -3,7 +3,7 @@ import { postData } from '../lib/api.js';
 import { API_URL } from '../config.js';
 import { loadData, refreshAll } from './data.js';
 import { fmtAmount } from '../lib/format.js';
-import { closeMaciaModal, loadMaciaFromGAS, maciaLog, refreshMacia, saveMacia } from './macia.js';
+import { closeMaciaModal, loadMaciaFromGAS, refreshMacia, saveMacia } from './macia.js';
 import { refreshDebts, saveDebts } from './debts.js';
 import { closeDayTips } from '../ui/menus.js';
 import { showNotification } from '../ui/notify.js';
@@ -166,9 +166,7 @@ export function confirmDeleteExecute() {
   if (state._pendingMaciaDelete !== null) {
     const { id, row } = state._pendingMaciaDelete;
     closeConfirm();
-    const t = state.maciaTx.find(x => x.id === id);
     state.maciaTx = state.maciaTx.filter(x => x.id !== id);
-    maciaLog('delete', `${t ? t.concept : id} · ${t ? fmtAmount(t.amount) : ''}`);
     saveMacia();
     refreshMacia();
     if (API_URL && row) {

@@ -10,7 +10,7 @@ import { toggleDayLabel, togglePaid, toggleRowMenu } from './ui/menus.js';
 import { closeConfirm, closeModal, confirmDeleteExecute, deleteRow, openCreateModal, openEditModal, submitModal } from './features/modal.js';
 import { state } from './state.js';
 import { loadTags, mergeTags } from './lib/storage.js';
-import { restoreTabs, switchMaciaSubtab, switchMacvSubtab, switchTab } from './ui/tabs.js';
+import { restoreTabs, switchMacvSubtab, switchTab } from './ui/tabs.js';
 import { authLogin, initAuth, logout } from './features/auth.js';
 
 /* ── INIT MACIA ───────────────────────────────────────── */
@@ -45,7 +45,7 @@ setupCombo('fCategory',
    Reexponemos aquí solo las funciones invocadas desde HTML.
    → Punto natural a desmontar si se migra a event delegation. */
 Object.assign(window, {
-  switchTab, switchMacvSubtab, switchMaciaSubtab,
+  switchTab, switchMacvSubtab,
   sortBy, sortExpBy, sortMaciaBy,
   applyFilters, applyExpFilters, applyMaciaFilters,
   segSet,

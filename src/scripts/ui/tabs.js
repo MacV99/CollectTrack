@@ -1,8 +1,7 @@
 /* tabs.js — generado por refactor modular */
-import { renderMaciaAudit } from '../features/macia.js';
 
 /* ── TABS ───────────────────────────────────────────── */
-// Grupos de nivel superior: MACV (cobros/pagos) · MACIA (movimientos/auditoría).
+// Grupos de nivel superior: MACV (cobros/pagos) · MACIA (movimientos).
 export function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tab === tab);
@@ -26,23 +25,11 @@ export function switchMacvSubtab(sub) {
 
 // Restaura el último grupo / sub-pestaña usados (persisten entre recargas).
 export function restoreTabs() {
-  let tab = 'macv', macv = 'cobros', macia = 'movimientos';
+  let tab = 'macv', macv = 'cobros';
   try {
-    tab   = localStorage.getItem('ct_active_tab')  || tab;
-    macv  = localStorage.getItem('ct_macv_subtab') || macv;
-    macia = localStorage.getItem('ct_macia_subtab') || macia;
+    tab  = localStorage.getItem('ct_active_tab')  || tab;
+    macv = localStorage.getItem('ct_macv_subtab') || macv;
   } catch {}
   switchMacvSubtab(macv);
-  switchMaciaSubtab(macia);
   switchTab(tab);
-}
-
-/* ── SUBTABS ──────────────────────────────────────────── */
-export function switchMaciaSubtab(sub) {
-  document.querySelectorAll('.macia-subtab-btn').forEach(b =>
-    b.classList.toggle('active', b.dataset.subtab === sub));
-  document.querySelectorAll('.macia-subview').forEach(v => v.classList.remove('active'));
-  document.getElementById(`macia-sub-${sub}`).classList.add('active');
-  if (sub === 'auditoria') renderMaciaAudit();
-  try { localStorage.setItem('ct_macia_subtab', sub); } catch {}
 }

@@ -22,76 +22,50 @@ export function mapMaciaRow(r) {
   };
 }
 
-export function mapMaciaAuditRow(r) {
-  return {
-    _row:   r._row,
-    id:     String(r['ID']        || '').trim(),
-    action: String(r['ACTION']    || '').trim(),
-    detail: String(r['DETAIL']    || '').trim(),
-    ts:     String(r['TIMESTAMP'] || '').trim(),
-  };
-}
-
 /* ═══════════════════════════════════════════════════════
    MACIA — Finanzas del emprendimiento
    ═══════════════════════════════════════════════════════ */
-export const MACIA_KEY       = 'macia_v1';
-
-export const MACIA_AUDIT_KEY = 'macia_audit_v1';
-
-export const MACIA_AUDIT_MAX = 500;
+export const MACIA_KEY = 'macia_v1';
 
 /* ── HELPERS ──────────────────────────────────────────── */
 export function maciaUuid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
+const MACIA_MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+  'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+// 'YYYY-MM' → 'Marzo 2025' (etiqueta del separador de mes).
+export function maciaMonthLabel(mk) {
+  const [y, m] = mk.split('-');
+  return `${MACIA_MESES[(+m) - 1] || ''} ${y}`.trim();
+}
+
 /* ── STORAGE (caché local) ────────────────────────────── */
 export function saveMacia() {
   try {
-    localStorage.setItem(MACIA_KEY,       JSON.stringify(state.maciaTx));
-    localStorage.setItem(MACIA_AUDIT_KEY, JSON.stringify(state.maciaAudit));
+    localStorage.setItem(MACIA_KEY, JSON.stringify(state.maciaTx));
   } catch {}
 }
 
 export function loadMaciaStorage() {
   try {
-    const tx    = localStorage.getItem(MACIA_KEY);
-    const audit = localStorage.getItem(MACIA_AUDIT_KEY);
-    state.maciaTx    = tx    ? JSON.parse(tx)    : [];
-    state.maciaAudit = audit ? JSON.parse(audit) : [];
-  } catch { state.maciaTx = []; state.maciaAudit = []; }
+    const tx = localStorage.getItem(MACIA_KEY);
+    state.maciaTx = tx ? JSON.parse(tx) : [];
+  } catch { state.maciaTx = []; }
 }
 
 /* ── CARGA DESDE GAS ──────────────────────────────────── */
 export async function loadMaciaFromGAS() {
   if (!API_URL) return;
   try {
-    const [txRes, auditRes] = await Promise.allSettled([
-      fetchJSONP(API_URL + '?sheet=macia'),
-      fetchJSONP(API_URL + '?sheet=macia_audit'),
-    ]);
-    if (txRes.status === 'fulfilled' && Array.isArray(txRes.value)) {
-      state.maciaTx = txRes.value.filter(r => r['AMOUNT']).map(mapMaciaRow);
-    }
-    if (auditRes.status === 'fulfilled' && Array.isArray(auditRes.value)) {
-      state.maciaAudit = auditRes.value.filter(r => r['ACTION']).map(mapMaciaAuditRow);
+    const txRes = await fetchJSONP(API_URL + '?sheet=macia');
+    if (Array.isArray(txRes)) {
+      state.maciaTx = txRes.filter(r => r['AMOUNT']).map(mapMaciaRow);
     }
     saveMacia();
     refreshMacia();
   } catch (err) { console.error('loadMaciaFromGAS:', err); }
-}
-
-/* ── AUDIT ────────────────────────────────────────────── */
-export function maciaLog(action, detail) {
-  const entry = { id: maciaUuid(), action, detail, ts: new Date().toISOString() };
-  state.maciaAudit.unshift(entry);
-  if (state.maciaAudit.length > MACIA_AUDIT_MAX) state.maciaAudit.length = MACIA_AUDIT_MAX;
-  if (API_URL) {
-    postData({ action: 'create', sheet: 'macia_audit',
-      ID: entry.id, ACTION: action, DETAIL: detail, TIMESTAMP: entry.ts,
-    }).catch(() => {});
-  }
 }
 
 /* ── KPIs ─────────────────────────────────────────────── */
@@ -182,7 +156,19 @@ export function renderMaciaTable() {
     return;
   }
 
+  // Separador visual entre meses: al iterar filas ya ordenadas por fecha,
+  // inyecta una fila-encabezado cada vez que cambia el mes. Solo aplica con
+  // orden por fecha (con otro criterio no hay bloques de mes coherentes).
+  let lastMonth = null;
   tbody.innerHTML = state.maciaFiltered.map((t, i) => {
+    let sep = '';
+    if (state.maciaSortCol === 'date') {
+      const mk = (t.date || '').slice(0, 7);   // 'YYYY-MM'
+      if (mk && mk !== lastMonth) {
+        lastMonth = mk;
+        sep = `<tr class="month-sep"><td colspan="7">${maciaMonthLabel(mk)}</td></tr>`;
+      }
+    }
     const typeBadge    = `<span class="badge badge-${t.type}"><span class="dot dot-${t.type}"></span>${t.type === 'ingreso' ? 'Ingreso' : 'Egreso'}</span>`;
     const accountBadge = `<span class="badge badge-${t.account}"><span class="dot dot-${t.account}"></span>${t.account === 'nu' ? 'Nu' : 'Nequi'}</span>`;
     const amtColor     = t.type === 'ingreso' ? '#4ade80' : '#f87171';
@@ -193,7 +179,7 @@ export function renderMaciaTable() {
       : (rawObs || '<span style="color:var(--text-muted)">—</span>');
 
     const pending = !t._row ? ' style="opacity:.65" title="Sincronizando…"' : '';
-    return `<tr style="animation-delay:${i*30}ms"${pending}>
+    return sep + `<tr style="animation-delay:${i*30}ms"${pending}>
       <td style="white-space:nowrap;font-size:12px">${t.date || '—'}</td>
       <td class="td-name" style="font-size:13px">${t.concept || '—'}</td>
       <td class="td-amount" style="color:${amtColor}">${amtSign}${fmtAmount(t.amount)}</td>
@@ -210,33 +196,6 @@ export function maciaTxMenu(id, row) {
     { onclick: `openMaciaModal('${id}')`, icon: ROW_MENU_ICONS.pencil, label: 'Editar' },
     { onclick: `deleteMaciaTx('${id}',${row})`, icon: ROW_MENU_ICONS.trash, label: 'Eliminar', danger: true },
   ]);
-}
-
-/* ── RENDER AUDIT ─────────────────────────────────────── */
-export function renderMaciaAudit() {
-  document.getElementById('maciaAuditCount').textContent = state.maciaAudit.length;
-  const tbody = document.getElementById('maciaAuditBody');
-  if (!state.maciaAudit.length) {
-    tbody.innerHTML = '<tr class="state-row"><td colspan="3">No hay eventos registrados.</td></tr>';
-    return;
-  }
-  const ACTION_META = {
-    import_csv: { label: 'Importar CSV', cls: 'audit-import' },
-    create:     { label: 'Crear',        cls: 'audit-create' },
-    edit:       { label: 'Editar',       cls: 'audit-edit'   },
-    delete:     { label: 'Eliminar',     cls: 'audit-delete' },
-  };
-  tbody.innerHTML = state.maciaAudit.map(e => {
-    const m  = ACTION_META[e.action] || { label: e.action, cls: '' };
-    const dt = new Date(e.ts);
-    const fmt = dt.toLocaleDateString('es-CO') + ' ' +
-      dt.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
-    return `<tr>
-      <td style="white-space:nowrap;font-size:11px;color:var(--text-muted)">${fmt}</td>
-      <td><span class="audit-action ${m.cls}">${m.label}</span></td>
-      <td style="font-size:11px;color:var(--text-dim)">${e.detail}</td>
-    </tr>`;
-  }).join('');
 }
 
 /* ── MODAL ────────────────────────────────────────────── */
@@ -307,7 +266,6 @@ export function submitMaciaModal() {
     if (idx < 0) return;
     const t = state.maciaTx[idx];
     state.maciaTx[idx] = { ...t, date, concept, amount, type, account, observations: obs };
-    maciaLog('edit', `${concept} · ${type} · ${fmtAmount(amount)} · ${account}`);
     saveMacia(); refreshMacia(); closeMaciaModal();
     if (API_URL && t._row) {
       postData({ action: 'update', sheet: 'macia', _row: t._row,
@@ -318,7 +276,6 @@ export function submitMaciaModal() {
   } else {
     const id = maciaUuid(), createdAt = new Date().toISOString();
     state.maciaTx.unshift({ id, _row: null, date, concept, amount, type, account, observations: obs, createdAt });
-    maciaLog('create', `${concept} · ${type} · ${fmtAmount(amount)} · ${account}`);
     saveMacia(); refreshMacia(); closeMaciaModal();
     if (API_URL) {
       postData({ action: 'create', sheet: 'macia',
@@ -389,7 +346,6 @@ export function importMaciaCsv(event) {
 
       if (!newItems.length){showNotification('Sin filas con monto válido','err');return;}
       state.maciaTx.push(...newItems);
-      maciaLog('import_csv',`${newItems.length} movimientos importados desde "${file.name}"`);
       saveMacia(); refreshMacia();
       showNotification(`${newItems.length} importados — sincronizando…`);
 
@@ -510,7 +466,6 @@ export async function cargaInicialMacia() {
       OBSERVATIONS: '', CREATED_AT: createdAt });
   }));
 
-  maciaLog('import_csv', `${REGS.length} movimientos importados — historial CUENTAS MACIA (todo en Nu)`);
   localStorage.setItem('macia_carga_v3', '1');
   await loadMaciaFromGAS();
 

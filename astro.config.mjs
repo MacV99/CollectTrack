@@ -30,6 +30,12 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // El SW nuevo se activa y toma control de las pestañas abiertas de
+        // inmediato (sin esperar a que se cierren todas). Junto con la
+        // recarga en 'controllerchange' de Layout.astro, la app se
+        // actualiza sola en cada deploy — sin Ctrl+Shift+R manual.
+        skipWaiting: true,
+        clientsClaim: true,
         // Precachea el shell estático generado por el build (assets hasheados).
         globPatterns: ['**/*.{js,css,html,svg,woff,woff2}'],
         // Google Sheets / Apps Script siempre por red (no se cachean).

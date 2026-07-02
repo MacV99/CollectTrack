@@ -32,7 +32,6 @@ export const state = {
 
   // ── MACIA ──
   maciaTx: [],
-  maciaAudit: [],
   maciaFiltered: [],
   maciaModalId: null,
   maciaSortCol: 'date',

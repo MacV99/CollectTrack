@@ -37,3 +37,13 @@
     <button class="btn-save" id="debtBtnSave" onclick="submitDebtModal()">Guardar</button>
   </div>
 </div>
+
+<style>
+  /* Rejilla de dos columnas para el par persona/monto.
+     Scoped: este markup es estático, así que el scoping de Astro sí aplica. */
+  .form-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+</style>

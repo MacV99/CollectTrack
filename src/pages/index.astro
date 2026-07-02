@@ -9,7 +9,6 @@ import DeudasKpis from '../components/DeudasKpis.astro';
 import DeudasPanel from '../components/DeudasPanel.astro';
 import MaciaKpis from '../components/MaciaKpis.astro';
 import MaciaMovimientos from '../components/MaciaMovimientos.astro';
-import MaciaAuditoria from '../components/MaciaAuditoria.astro';
 import MacvModal from '../components/MacvModal.astro';
 import MaciaModal from '../components/MaciaModal.astro';
 import DeudaModal from '../components/DeudaModal.astro';
@@ -63,18 +62,7 @@ import AuthGate from '../components/AuthGate.astro';
     <div class="panel-view" id="view-macia">
       <MaciaKpis />
 
-      <div class="macia-subtabs">
-        <button class="macia-subtab-btn active" data-subtab="movimientos" onclick="switchMaciaSubtab('movimientos')">Movimientos</button>
-        <button class="macia-subtab-btn" data-subtab="auditoria" onclick="switchMaciaSubtab('auditoria')">Auditoría</button>
-      </div>
-
-      <div class="macia-subview active" id="macia-sub-movimientos">
-        <MaciaMovimientos />
-      </div>
-
-      <div class="macia-subview" id="macia-sub-auditoria">
-        <MaciaAuditoria />
-      </div>
+      <MaciaMovimientos />
     </div>
   </main>
 
