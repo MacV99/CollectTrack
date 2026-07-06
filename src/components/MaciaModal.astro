@@ -59,4 +59,14 @@
     grid-template-columns: 1fr 1fr;
     gap: 14px;
   }
+
+  /* En pantallas angostas los pares de dos columnas se apilan. El límite
+     lo marca TIPO/CUENTA: sus 4 botones segmentados (Ingreso/Egreso +
+     Nu/Nequi) solo caben en fila cuando el modal se acerca a su ancho
+     máximo (~480px); por debajo se montan entre sí. Colapsamos a una
+     columna en todos los teléfonos para dejar a cada segmento el ancho
+     completo. */
+  @media (max-width: 480px) {
+    .form-grid-2 { grid-template-columns: 1fr; }
+  }
 </style>
