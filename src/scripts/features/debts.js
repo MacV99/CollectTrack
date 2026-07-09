@@ -1,7 +1,10 @@
 /* debts.js — MACV · Deudas: préstamos ocasionales entre personas.
-   No es un sheet fijo como cobros/pagos: vive solo en localStorage,
-   sin sincronización con Apps Script. */
-import { fmtAmount } from '../lib/format.js';
+   Se sincroniza con la hoja "deudas" de Sheets vía Apps Script (mismo
+   patrón que MACIA: lista plana con `id`, escrituras optimistas + recarga).
+   localStorage sigue siendo la caché offline (DEBTS_KEY). */
+import { fetchJSONP, postData } from '../lib/api.js';
+import { API_URL } from '../config.js';
+import { fmtAmount, normMaciaDate, parseAmount } from '../lib/format.js';
 import { showNotification } from '../ui/notify.js';
 import { buildRowMenu, ROW_MENU_ICONS } from '../ui/rowMenu.js';
 import { state } from '../state.js';
@@ -22,6 +25,69 @@ export function loadDebtsStorage() {
     const raw = localStorage.getItem(DEBTS_KEY);
     state.debts = raw ? JSON.parse(raw) : [];
   } catch { state.debts = []; }
+}
+
+/* ── CARGA DESDE GAS ──────────────────────────────────── */
+// Fila de la hoja "deudas" (ID | PERSON | DATE | AMOUNT | TYPE | NOTE |
+// STATUS | CREATED_AT) → objeto de deuda del estado.
+export function mapDebtRow(r) {
+  return {
+    _row:      r._row,
+    id:        String(r['ID'] || '').trim() || debtUuid(),
+    person:    String(r['PERSON'] || '').trim(),
+    date:      normMaciaDate(r['DATE']),
+    amount:    parseAmount(r['AMOUNT']),
+    type:      String(r['TYPE'] || 'me_deben').trim().toLowerCase(),
+    note:      String(r['NOTE'] || '').trim(),
+    status:    String(r['STATUS'] || 'pendiente').trim().toLowerCase(),
+    createdAt: String(r['CREATED_AT'] || '').trim(),
+  };
+}
+
+export async function loadDebtsFromGAS() {
+  if (!API_URL) return;
+  try {
+    const res = await fetchJSONP(API_URL + '?sheet=deudas');
+    if (Array.isArray(res)) {
+      state.debts = res.filter(r => r['AMOUNT']).map(mapDebtRow);
+    }
+    saveDebts();
+    refreshDebts();
+  } catch (err) { console.error('loadDebtsFromGAS:', err); }
+}
+
+/* ── INIT + MIGRACIÓN ─────────────────────────────────── */
+// Arranca desde la caché local (respuesta instantánea) y luego trae la hoja.
+// Migración one-time: si la hoja está vacía pero había deudas solo-locales
+// (versión previa sin backend), las sube a Sheets. Si la escritura no prospera
+// (deployment viejo / hoja "deudas" inexistente), conserva las deudas locales
+// para no perder datos.
+export async function initDebts() {
+  loadDebtsStorage();
+  refreshDebts();
+  if (!API_URL) return;
+
+  const localBefore = state.debts.slice();
+  await loadDebtsFromGAS();
+
+  if (state.debts.length === 0 && localBefore.length) {
+    showNotification('Migrando deudas a Sheets…');
+    await Promise.allSettled(localBefore.map(d => postData({
+      action: 'create', sheet: 'deudas',
+      ID: d.id || debtUuid(), PERSON: d.person, DATE: d.date, AMOUNT: d.amount,
+      TYPE: d.type, NOTE: d.note || '', STATUS: d.status || 'pendiente',
+      CREATED_AT: d.createdAt || new Date().toISOString(),
+    })));
+    await loadDebtsFromGAS();
+    if (state.debts.length === 0) {
+      state.debts = localBefore;          // no prosperó: no perder datos locales
+      saveDebts();
+      refreshDebts();
+      showNotification('No se pudo migrar deudas — revisa el deployment', 'err');
+    } else {
+      showNotification(`${state.debts.length} deudas migradas ✓`);
+    }
+  }
 }
 
 /* ── KPIs ─────────────────────────────────────────────── */
@@ -124,17 +190,22 @@ export function renderDebtsTable() {
       ? `<span title="${rawNote}">${rawNote.slice(0, 45)}…</span>`
       : (rawNote || '<span style="color:var(--text-muted)">—</span>');
     const paid = d.status === 'pagada';
+    // Sin _row = aún no sincronizada con Sheets: se muestra atenuada y sin
+    // acciones (no se puede editar/borrar una fila que aún no existe en la hoja).
+    const pending = !d._row;
+    const rowOpacity = pending ? ';opacity:.65' : (paid ? ';opacity:.7' : '');
+    const rowTitle   = pending ? ' title="Sincronizando…"' : '';
 
-    return `<tr data-status="${d.status}" style="animation-delay:${i * 30}ms${paid ? ';opacity:.7' : ''}">
+    return `<tr data-status="${d.status}" style="animation-delay:${i * 30}ms${rowOpacity}"${rowTitle}>
       <td style="white-space:nowrap;font-size:12px" data-label="Fecha">${d.date || '—'}</td>
       <td class="td-name" data-label="Persona" style="font-size:13px">${d.person || '—'}</td>
       <td class="td-amount" data-label="Monto" style="color:${amtColor}">${amtSign}${fmtAmount(d.amount)}</td>
       <td data-label="Tipo"><span class="badge ${tm.badge}"><span class="dot ${tm.dot}"></span>${tm.label}</span></td>
       <td data-label="Estado"><span class="badge ${sm.badge}"><span class="dot ${sm.dot}"></span>${sm.label}</span></td>
       <td style="font-size:11px;color:var(--text-muted);max-width:180px" data-label="Nota">${note}</td>
-      <td class="td-actions" data-label="Acciones">
+      <td class="td-actions" data-label="Acciones">${pending ? '' : `
         <button class="btn-row check ${paid ? 'on' : ''}" title="${paid ? 'Marcar pendiente' : 'Marcar pagada'}" onclick="toggleDebtStatus('${d.id}')">✓</button>
-        ${debtRowMenu(d.id)}
+        ${debtRowMenu(d.id)}`}
       </td>
     </tr>`;
   }).join('');
@@ -156,7 +227,14 @@ export function toggleDebtStatus(id) {
   state.debts[idx] = { ...d, status: newStatus };
   saveDebts();
   refreshDebts();
-  showNotification(newStatus === 'pagada' ? 'Marcada como pagada ✓' : 'Marcada pendiente');
+  const msg = newStatus === 'pagada' ? 'Marcada como pagada ✓' : 'Marcada pendiente';
+  if (API_URL && d._row) {
+    postData({ action: 'update', sheet: 'deudas', _row: d._row, STATUS: newStatus })
+      .then(() => showNotification(msg))
+      .catch(err => { showNotification('Error: ' + err.message, 'err'); loadDebtsFromGAS(); });
+  } else {
+    showNotification(msg);
+  }
 }
 
 /* ── MODAL ────────────────────────────────────────────── */
@@ -218,15 +296,26 @@ export function submitDebtModal() {
     if (idx < 0) return;
     const d = state.debts[idx];
     state.debts[idx] = { ...d, person, date, amount, type, note };
-    showNotification('Actualizado ✓');
+    saveDebts(); refreshDebts(); closeDebtModal();
+    // STATUS se maneja aparte (toggleDebtStatus): no se envía en la edición.
+    if (API_URL && d._row) {
+      postData({ action: 'update', sheet: 'deudas', _row: d._row,
+        PERSON: person, DATE: date, AMOUNT: amount, TYPE: type, NOTE: note })
+        .then(() => showNotification('Actualizado ✓'))
+        .catch(err => { showNotification('Error: ' + err.message, 'err'); loadDebtsFromGAS(); });
+    } else { showNotification('Actualizado ✓'); }
   } else {
     const id = debtUuid(), createdAt = new Date().toISOString();
-    state.debts.unshift({ id, person, date, amount, type, note, status: 'pendiente', createdAt });
-    showNotification('Guardado ✓');
+    state.debts.unshift({ id, _row: null, person, date, amount, type, note, status: 'pendiente', createdAt });
+    saveDebts(); refreshDebts(); closeDebtModal();
+    if (API_URL) {
+      postData({ action: 'create', sheet: 'deudas',
+        ID: id, PERSON: person, DATE: date, AMOUNT: amount,
+        TYPE: type, NOTE: note, STATUS: 'pendiente', CREATED_AT: createdAt })
+        .then(() => { showNotification('Guardado ✓'); loadDebtsFromGAS(); })
+        .catch(err => { showNotification('Error: ' + err.message, 'err'); });
+    } else { showNotification('Guardado ✓'); }
   }
-  saveDebts();
-  refreshDebts();
-  closeDebtModal();
 }
 
 /* ── DELETE ───────────────────────────────────────────── */
@@ -236,7 +325,7 @@ export function deleteDebt(id) {
   document.getElementById('confirmMsg').innerHTML =
     `¿Eliminar la deuda de <b style="color:var(--text)">${d.person}</b>?<br>` +
     `<span style="color:var(--text-muted);font-size:11px">Esta acción no se puede deshacer.</span>`;
-  state._pendingDebtDelete = { id };
+  state._pendingDebtDelete = { id, row: d._row };
   document.getElementById('confirmBackdrop').style.display = 'block';
   document.getElementById('confirmModal').style.display    = 'flex';
 }

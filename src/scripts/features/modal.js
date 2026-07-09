@@ -4,7 +4,7 @@ import { API_URL } from '../config.js';
 import { loadData, refreshAll } from './data.js';
 import { fmtAmount } from '../lib/format.js';
 import { closeMaciaModal, loadMaciaFromGAS, refreshMacia, saveMacia } from './macia.js';
-import { refreshDebts, saveDebts } from './debts.js';
+import { loadDebtsFromGAS, refreshDebts, saveDebts } from './debts.js';
 import { closeDayTips } from '../ui/menus.js';
 import { showNotification } from '../ui/notify.js';
 import { resolveRow, state } from '../state.js';
@@ -155,12 +155,18 @@ export function closeConfirm() {
 
 export function confirmDeleteExecute() {
   if (state._pendingDebtDelete !== null) {
-    const { id } = state._pendingDebtDelete;
+    const { id, row } = state._pendingDebtDelete;
     closeConfirm();
     state.debts = state.debts.filter(x => x.id !== id);
     saveDebts();
     refreshDebts();
-    showNotification('Eliminado ✓');
+    if (API_URL && row) {
+      postData({ action: 'delete', sheet: 'deudas', _row: row })
+        .then(() => showNotification('Eliminado ✓'))
+        .catch(err => { showNotification('Error: ' + err.message, 'err'); loadDebtsFromGAS(); });
+    } else {
+      showNotification('Eliminado ✓');
+    }
     return;
   }
   if (state._pendingMaciaDelete !== null) {

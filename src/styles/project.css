@@ -587,6 +587,9 @@ tbody td { padding: 15px 22px; font-size: 12px; vertical-align: middle; }
 }
 
 /* ── CONFIRM MODAL ──────────────────────────── */
+/* A diferencia de .modal (header/footer fijos + .modal-body con scroll
+   interno), este diálogo es una sola columna corta sin body separado,
+   así que desborda como un todo: overflow-y en el propio contenedor. */
 .confirm-modal {
   display: none; position: fixed;
   top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -758,7 +761,6 @@ tbody td { padding: 15px 22px; font-size: 12px; vertical-align: middle; }
 .combo-create.active { background: var(--accent-dim); }
 .combo-empty { color: var(--text-muted); cursor: default; }
 .combo { width: 100%; }
-.combo .form-control { width: 100%; }
 
 @media (hover: hover) {
   .combo-option:hover { background: rgba(255, 255, 255, .05); color: var(--text); }

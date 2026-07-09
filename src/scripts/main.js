@@ -5,7 +5,7 @@ import { loadData } from './features/data.js';
 import { applyExpFilters, sortExpBy } from './features/expenses.js';
 import { fmtAmountInput } from './lib/format.js';
 import { applyMaciaFilters, cargaInicialMacia, closeMaciaModal, deleteMaciaTx, importMaciaCsv, loadMaciaFromGAS, loadMaciaStorage, openMaciaModal, refreshMacia, segSet, sortMaciaBy, submitMaciaModal } from './features/macia.js';
-import { applyDebtFilters, closeDebtModal, deleteDebt, loadDebtsStorage, openDebtModal, refreshDebts, segSetDebt, sortDebtsBy, submitDebtModal, toggleDebtStatus } from './features/debts.js';
+import { applyDebtFilters, closeDebtModal, deleteDebt, initDebts, openDebtModal, segSetDebt, sortDebtsBy, submitDebtModal, toggleDebtStatus } from './features/debts.js';
 import { toggleDayLabel, togglePaid, toggleRowMenu } from './ui/menus.js';
 import { closeConfirm, closeModal, confirmDeleteExecute, deleteRow, openCreateModal, openEditModal, submitModal } from './features/modal.js';
 import { state } from './state.js';
@@ -18,9 +18,8 @@ loadMaciaStorage();
 refreshMacia();
 loadMaciaFromGAS().then(() => cargaInicialMacia());
 
-/* ── INIT DEUDAS (solo local, sin Sheets) ─────────────── */
-loadDebtsStorage();
-refreshDebts();
+/* ── INIT DEUDAS (caché local + sync con hoja "deudas") ─ */
+initDebts();
 
 /* ── SERVICE WORKER ─────────────────────────────────── */
 // El registro del SW lo inyecta @vite-pwa/astro en el build (autoUpdate).

@@ -17,6 +17,7 @@
 //   cobros:      NAME | CATEGORY | AMOUNT | DATE | PAID
 //   pagos:       CATEGORY | AMOUNT | DATE | PAID
 //   macia:       ID | DATE | CONCEPT | AMOUNT | TYPE | ACCOUNT | OBSERVATIONS | CREATED_AT
+//   deudas:      ID | PERSON | DATE | AMOUNT | TYPE | NOTE | STATUS | CREATED_AT
 //   macia_audit: ID | ACTION | DETAIL | TIMESTAMP
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -27,6 +28,7 @@ const SHEET_COLS = {
   cobros:      ['NAME', 'CATEGORY', 'AMOUNT', 'DATE', 'PAID'],
   pagos:       ['CATEGORY', 'AMOUNT', 'DATE', 'PAID'],
   macia:       ['ID', 'DATE', 'CONCEPT', 'AMOUNT', 'TYPE', 'ACCOUNT', 'OBSERVATIONS', 'CREATED_AT'],
+  deudas:      ['ID', 'PERSON', 'DATE', 'AMOUNT', 'TYPE', 'NOTE', 'STATUS', 'CREATED_AT'],
   macia_audit: ['ID', 'ACTION', 'DETAIL', 'TIMESTAMP'],
 };
 
