@@ -2,11 +2,13 @@
 import { fetchJSONP, postData } from '../lib/api.js';
 import { API_URL } from '../config.js';
 import { parseCsv } from '../lib/csv.js';
-import { fmtAmount, normMaciaDate, parseAmount } from '../lib/format.js';
+import { fmtAmount, fmtAmountInput, normMaciaDate, parseAmount } from '../lib/format.js';
 import { showNotification } from '../ui/notify.js';
 import { buildRowMenu, ROW_MENU_ICONS } from '../ui/rowMenu.js';
 import { state } from '../state.js';
 import { saveTag } from '../lib/storage.js';
+import { calcRepartoMensual, repartoLines, saldoPorMes, SUELDO_CUELLAR, isTraslado,
+  CONCEPTO_TRASLADO } from './reparto.js';
 
 export function mapMaciaRow(r) {
   return {
@@ -70,13 +72,15 @@ export async function loadMaciaFromGAS() {
 
 /* ── KPIs ─────────────────────────────────────────────── */
 export function updateMaciaKPIs() {
-  let ingTotal = 0, egTotal = 0, nuBal = 0, nequiBal = 0;
+  // Los traslados internos no son ingreso/egreso real (solo mueven plata
+  // entre cuentas), así que no cuentan en estos totales; los saldos por
+  // cuenta sí los incluyen y salen de getMaciaBalances (fuente única).
+  let ingTotal = 0, egTotal = 0;
   state.maciaTx.forEach(t => {
-    const v = t.amount, sign = t.type === 'ingreso' ? 1 : -1;
-    if (t.type === 'ingreso') ingTotal += v; else egTotal += v;
-    if (t.account === 'nu') nuBal += sign * v; else nequiBal += sign * v;
+    if (isTraslado(t)) return;
+    if (t.type === 'ingreso') ingTotal += t.amount; else egTotal += t.amount;
   });
-  const total = nuBal + nequiBal;
+  const { nu: nuBal, nequi: nequiBal, total } = getMaciaBalances();
 
   document.getElementById('maciaKpiIngresos').textContent = fmtAmount(ingTotal);
   document.getElementById('maciaKpiEgresos').textContent  = fmtAmount(egTotal);
@@ -159,6 +163,10 @@ export function renderMaciaTable() {
   // Separador visual entre meses: al iterar filas ya ordenadas por fecha,
   // inyecta una fila-encabezado cada vez que cambia el mes. Solo aplica con
   // orden por fecha (con otro criterio no hay bloques de mes coherentes).
+  // Saldo real por mes (ingresos − egresos, repartos incluidos, traslados no),
+  // para mostrarlo en cada separador. Se calcula sobre TODO, no lo filtrado.
+  const saldoByMonth = saldoPorMes(state.maciaTx);
+
   let lastMonth = null;
   tbody.innerHTML = state.maciaFiltered.map((t, i) => {
     let sep = '';
@@ -166,7 +174,13 @@ export function renderMaciaTable() {
       const mk = (t.date || '').slice(0, 7);   // 'YYYY-MM'
       if (mk && mk !== lastMonth) {
         lastMonth = mk;
-        sep = `<tr class="month-sep"><td colspan="7">${maciaMonthLabel(mk)}</td></tr>`;
+        const saldo = saldoByMonth[mk] || 0;
+        const saldoTxt = (saldo < 0 ? '-' : '') + fmtAmount(Math.abs(saldo));
+        sep = `<tr class="month-sep" onclick="openRepartoModal('${mk}')" title="Ver y agregar el reparto del mes">
+          <td colspan="7">
+            <span class="month-sep-label">${maciaMonthLabel(mk)}</span>
+            <span class="month-sep-saldo" style="color:${saldo < 0 ? '#f87171' : '#4ade80'}">Saldo ${saldoTxt}</span>
+          </td></tr>`;
       }
     }
     const typeBadge    = `<span class="badge badge-${t.type}"><span class="dot dot-${t.type}"></span>${t.type === 'ingreso' ? 'Ingreso' : 'Egreso'}</span>`;
@@ -245,6 +259,18 @@ export function closeMaciaModal() {
   document.getElementById('maciaModal').style.display    = 'none';
 }
 
+// Inserta un movimiento MACIA de forma optimista y lanza su create a Sheets.
+// Devuelve la promesa del POST (resuelta si no hay API). No hace save/refresh
+// ni notifica: eso lo maneja quien llama, porque los flujos difieren.
+export function createMaciaTx({ date, concept, amount, type, account, observations = '' }) {
+  const id = maciaUuid(), createdAt = new Date().toISOString();
+  state.maciaTx.unshift({ id, _row: null, date, concept, amount, type, account, observations, createdAt });
+  return API_URL
+    ? postData({ action: 'create', sheet: 'macia', ID: id, DATE: date, CONCEPT: concept,
+        AMOUNT: amount, TYPE: type, ACCOUNT: account, OBSERVATIONS: observations, CREATED_AT: createdAt })
+    : Promise.resolve();
+}
+
 export function submitMaciaModal() {
   if (state.role === 'socio') return;   // socio: solo lectura
   const date    = document.getElementById('mfDate').value.trim();
@@ -274,15 +300,11 @@ export function submitMaciaModal() {
         .catch(err => { showNotification('Error: ' + err.message, 'err'); loadMaciaFromGAS(); });
     } else { showNotification('Actualizado ✓'); }
   } else {
-    const id = maciaUuid(), createdAt = new Date().toISOString();
-    state.maciaTx.unshift({ id, _row: null, date, concept, amount, type, account, observations: obs, createdAt });
+    const post = createMaciaTx({ date, concept, amount, type, account, observations: obs });
     saveMacia(); refreshMacia(); closeMaciaModal();
     if (API_URL) {
-      postData({ action: 'create', sheet: 'macia',
-        ID: id, DATE: date, CONCEPT: concept, AMOUNT: amount,
-        TYPE: type, ACCOUNT: account, OBSERVATIONS: obs, CREATED_AT: createdAt })
-        .then(() => { showNotification('Guardado ✓'); loadMaciaFromGAS(); })
-        .catch(err => { showNotification('Error: ' + err.message, 'err'); });
+      post.then(() => { showNotification('Guardado ✓'); loadMaciaFromGAS(); })
+          .catch(err => { showNotification('Error: ' + err.message, 'err'); });
     } else { showNotification('Guardado ✓'); }
   }
 }
@@ -361,6 +383,165 @@ export function importMaciaCsv(event) {
     } catch(err){ showNotification('Error: '+err.message,'err'); }
   };
   reader.readAsText(file,'UTF-8');
+}
+
+/* ── MODAL DE REPARTO (por mes) ───────────────────────── */
+// Se abre al clickear el separador de mes en el historial. Muestra los
+// 3 pagos ya calculados; cada uno se agrega como movimiento de ese mes.
+export function openRepartoModal(mk) {
+  const m = calcRepartoMensual(state.maciaTx).find(x => x.mk === mk);
+  document.getElementById('repartoModalTitle').textContent = `Reparto · ${maciaMonthLabel(mk)}`;
+  document.getElementById('repartoModalBody').innerHTML = repartoModalBodyHTML(mk, m);
+  document.getElementById('repartoBackdrop').style.display = 'block';
+  document.getElementById('repartoModal').style.display    = 'flex';
+}
+
+export function closeRepartoModal() {
+  document.getElementById('repartoBackdrop').style.display = 'none';
+  document.getElementById('repartoModal').style.display    = 'none';
+}
+
+// Arma el cuerpo del modal. Si el mes no alcanza el sueldo, avisa.
+function repartoModalBodyHTML(mk, m) {
+  if (!m || !m.suficiente) {
+    const neto = m ? m.neto : 0;
+    return `<p class="reparto-modal-note">El neto de este mes es <b>${fmtAmount(neto)}</b>,
+      no alcanza el sueldo de ${fmtAmount(SUELDO_CUELLAR)}. No hay reparto por agregar.</p>`;
+  }
+
+  const resumen = `<div class="reparto-modal-resumen">
+    <span>Neto del mes <b>${fmtAmount(m.neto)}</b></span>
+    <span>Sobrante a repartir <b>${fmtAmount(m.sobrante)}</b></span>
+  </div>`;
+
+  const rows = repartoLines(m).map(l => {
+    const action = l.done
+      ? '<span class="reparto-line-done">✓ Agregado</span>'
+      : (state.role === 'socio'
+          ? ''
+          : `<button type="button" class="reparto-add-btn" onclick="registrarReparto('${mk}','${l.kind}')">+ Agregar</button>`);
+    return `<div class="reparto-line${l.done ? ' is-done' : ''}">
+      <div class="reparto-line-info">
+        <span class="reparto-line-label">${l.concept}</span>
+        <span class="reparto-line-amount">${fmtAmount(l.amount)}</span>
+      </div>
+      ${action}
+    </div>`;
+  }).join('');
+
+  return resumen + rows;
+}
+
+/* ── REGISTRAR UNA LÍNEA DE REPARTO (botón Agregar) ───── */
+// Crea el egreso del mes/línea con el concepto canónico y el monto ya
+// calculado. Optimista: aparece de una en el historial y se marca ✓ en
+// el modal; luego sincroniza a Sheets (mismo flujo que crear a mano).
+export function registrarReparto(mk, kind) {
+  if (state.role === 'socio') return;   // socio: solo lectura
+
+  const m = calcRepartoMensual(state.maciaTx).find(x => x.mk === mk);
+  if (!m || !m.suficiente) return;
+
+  const p = repartoLines(m).find(l => l.kind === kind);
+  if (!p || p.done || !p.amount) return;   // ya registrado o sin monto
+
+  const post = createMaciaTx({ date: `${mk}-01`, concept: p.concept,
+    amount: p.amount, type: 'egreso', account: 'nu' });
+  saveMacia(); refreshMacia();
+
+  // Si el modal del mes sigue abierto, re-píntalo para marcar ✓.
+  if (document.getElementById('repartoModal')?.style.display === 'flex') openRepartoModal(mk);
+
+  if (API_URL) {
+    post.then(() => { showNotification(`${p.concept} registrado ✓`); loadMaciaFromGAS(); })
+        .catch(err => { showNotification('Error: ' + err.message, 'err'); });
+  } else { showNotification(`${p.concept} registrado ✓`); }
+}
+
+/* ── BALANCE / TRASLADO INTERNO (Nu ↔ Nequi) ──────────── */
+// Saldo actual por cuenta (para el modal de balance).
+export function getMaciaBalances() {
+  let nu = 0, nequi = 0;
+  state.maciaTx.forEach(t => {
+    const sign = t.type === 'ingreso' ? 1 : -1;
+    if (t.account === 'nu') nu += sign * t.amount; else nequi += sign * t.amount;
+  });
+  return { nu, nequi, total: nu + nequi };
+}
+
+// Saldos al abrir el modal de balance. maciaTx no cambia mientras está
+// abierto, así que estos valores (y el total) quedan fijos: la otra cuenta
+// se deriva de aquí sin recalcular en cada tecla.
+let balanceBase = { nu: 0, nequi: 0, total: 0 };
+
+export function openBalanceModal() {
+  if (state.role === 'socio') return;   // socio: solo lectura
+  balanceBase = getMaciaBalances();
+  document.getElementById('balNu').value    = balanceBase.nu.toLocaleString('es-CO');
+  document.getElementById('balNequi').value = balanceBase.nequi.toLocaleString('es-CO');
+  document.getElementById('balTotal').textContent = fmtAmount(balanceBase.total);
+  updateBalanceHint();
+  document.getElementById('balanceBackdrop').style.display = 'block';
+  document.getElementById('balanceModal').style.display    = 'flex';
+}
+
+export function closeBalanceModal() {
+  document.getElementById('balanceBackdrop').style.display = 'none';
+  document.getElementById('balanceModal').style.display    = 'none';
+}
+
+// Al editar una cuenta, la otra se ajusta sola para que el total no cambie.
+export function balanceSync(which) {
+  const nuEl = document.getElementById('balNu');
+  const neEl = document.getElementById('balNequi');
+  const editedEl = which === 'nu' ? nuEl : neEl;
+  const otherEl  = which === 'nu' ? neEl : nuEl;
+  fmtAmountInput(editedEl);                                 // formatea lo que escribe
+  const other = balanceBase.total - parseAmount(editedEl.value);
+  otherEl.value = other.toLocaleString('es-CO');            // la otra, en automático
+  updateBalanceHint();
+}
+
+// Cuánto se moverá entre cuentas: nuevo Nu − Nu actual.
+function balanceDelta() {
+  return parseAmount(document.getElementById('balNu').value) - balanceBase.nu;
+}
+
+// Explica el traslado que se hará (dirección + monto).
+function updateBalanceHint() {
+  const delta = balanceDelta();
+  const hint = document.getElementById('balHint');
+  if (!delta) { hint.textContent = 'Sin cambios.'; hint.classList.remove('active'); return; }
+  const monto = fmtAmount(Math.abs(delta));
+  hint.textContent = delta > 0 ? `Mover ${monto}: Nequi → Nu` : `Mover ${monto}: Nu → Nequi`;
+  hint.classList.add('active');
+}
+
+// Guarda el traslado como 2 movimientos (sale de una cuenta, entra a la otra).
+export function submitBalance() {
+  if (state.role === 'socio') return;   // socio: solo lectura
+  const delta = balanceDelta();
+  if (!delta) { closeBalanceModal(); return; }
+
+  const amount = Math.abs(delta);
+  const date = new Date().toISOString().slice(0, 10);
+  // delta>0: la plata ENTRA a Nu (ingreso Nu) y SALE de Nequi (egreso Nequi).
+  // delta<0: SALE de Nu (egreso Nu) y ENTRA a Nequi (ingreso Nequi).
+  const legs = delta > 0
+    ? [{ account: 'nu', type: 'ingreso' }, { account: 'nequi', type: 'egreso' }]
+    : [{ account: 'nu', type: 'egreso' }, { account: 'nequi', type: 'ingreso' }];
+
+  const posts = legs.map(leg => createMaciaTx({ date, concept: CONCEPTO_TRASLADO,
+    amount, type: leg.type, account: leg.account }));
+
+  saveMacia(); refreshMacia(); closeBalanceModal();
+
+  if (API_URL) {
+    showNotification('Balance ajustado — sincronizando…');
+    Promise.allSettled(posts).then(() => { showNotification('Balance ajustado ✓'); loadMaciaFromGAS(); });
+  } else {
+    showNotification('Balance ajustado ✓');
+  }
 }
 
 /* ── REFRESH ──────────────────────────────────────────── */

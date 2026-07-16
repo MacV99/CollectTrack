@@ -204,6 +204,16 @@ main { max-width: 1160px; margin: 0 auto; padding: 36px 32px; }
   .btn-add:hover { background: var(--accent); color: var(--bg); }
 }
 
+/* Variante Balance (traslado interno): morado, como las cuentas. */
+.btn-balance {
+  background: rgba(167,139,250,.12);
+  border-color: rgba(167,139,250,.35);
+  color: #a78bfa;
+}
+@media (hover: hover) {
+  .btn-balance:hover { background: #a78bfa; color: var(--bg); }
+}
+
 /* ── FILTERS ────────────────────────────────── */
 .filters {
   display: flex; gap: 10px; flex-wrap: wrap;
@@ -667,11 +677,53 @@ tbody td { padding: 15px 22px; font-size: 12px; vertical-align: middle; }
 .badge-egreso  { background: rgba(248,113,113,.13); color: #f87171; border: 1px solid rgba(248,113,113,.28); }
 .badge-nu      { background: rgba(167,139,250,.13); color: #a78bfa; border: 1px solid rgba(167,139,250,.28); }
 .badge-nequi   { background: rgba(244,114,182,.13); color: #f472b6; border: 1px solid rgba(244,114,182,.28); }
+.badge-pendiente { background: rgba(251,191,36,.13); color: #fbbf24; border: 1px solid rgba(251,191,36,.28); }
 
 .dot-ingreso { background: #4ade80; }
 .dot-egreso  { background: #f87171; }
 .dot-nu      { background: #a78bfa; }
 .dot-nequi   { background: #f472b6; }
+.dot-pendiente { background: #fbbf24; }
+
+/* ── Reparto (modal por mes, abierto desde el separador) ── */
+/* El separador de mes es clickeable: abre el modal de reparto. */
+.month-sep { cursor: pointer; }
+
+/* Resumen (neto / sobrante) arriba del modal. */
+.reparto-modal-resumen {
+  display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  margin-bottom: 14px; padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px; color: var(--text-muted);
+}
+.reparto-modal-resumen b { color: var(--text); font-size: 14px; }
+.reparto-modal-note { font-size: 13px; line-height: 1.6; color: var(--text-muted); }
+.reparto-modal-note b { color: var(--text); }
+
+/* Cada uno de los 3 pagos: info + botón Agregar (o ✓ si ya está). */
+.reparto-line {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 11px 0; border-bottom: 1px solid var(--border);
+}
+.reparto-line:last-child { border-bottom: none; }
+.reparto-line.is-done { opacity: .65; }
+.reparto-line-info { display: flex; flex-direction: column; gap: 2px; }
+.reparto-line-label { font-size: 13px; color: var(--text); }
+.reparto-line-amount { font-size: 15px; font-weight: 700; color: #f87171; }
+.reparto-line-done { font-size: 12px; font-weight: 600; color: #4ade80; }
+
+.reparto-add-btn {
+  font: inherit; font-size: 13px; font-weight: 600; color: #fbbf24; cursor: pointer;
+  background: rgba(251,191,36,.10);
+  border: 1px solid rgba(251,191,36,.35); border-radius: 8px;
+  padding: 7px 14px; white-space: nowrap;
+  transition: background .15s, transform .1s;
+}
+
+@media (hover: hover) {
+  .reparto-add-btn:hover { background: rgba(251,191,36,.22); }
+}
+.reparto-add-btn:active { transform: scale(.95); }
 
 .macia-kpi-grid {
   display: grid; grid-template-columns: repeat(5, 1fr);
@@ -702,6 +754,17 @@ tbody td { padding: 15px 22px; font-size: 12px; vertical-align: middle; }
   letter-spacing: .08em; text-transform: uppercase;
   color: var(--text-muted);
   border-top: 2px solid var(--border);
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+}
+.month-sep-saldo {
+  text-transform: none; letter-spacing: normal;
+  font-size: 12px; font-weight: 700; white-space: nowrap;
+}
+.month-sep-label { transition: color .15s; }
+
+@media (hover: hover) {
+  .month-sep:hover td { background: rgba(251,191,36,.06); }
+  .month-sep:hover .month-sep-label { color: var(--text); }
 }
 
 .form-control-textarea { resize: vertical; min-height: 72px; }
@@ -878,7 +941,8 @@ tbody td { padding: 15px 22px; font-size: 12px; vertical-align: middle; }
   /* separador de mes: fuera del formato tarjeta, solo la etiqueta + línea */
   tbody tr.month-sep { display: block; background: transparent; border: none; border-radius: 0; padding: 0; margin: 10px 0 2px; }
   tbody tr.month-sep::before { display: none; }
-  .month-sep td { display: block; }
+  /* Mantiene mes a la izquierda y saldo a la derecha también en móvil. */
+  .month-sep td { padding: 6px 2px; }
 
   .summary-grid { grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px 14px 14px; }
   .summary-subtitle { padding: 10px 14px 0; }

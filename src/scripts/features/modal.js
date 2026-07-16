@@ -3,7 +3,7 @@ import { postData } from '../lib/api.js';
 import { API_URL } from '../config.js';
 import { loadData, refreshAll } from './data.js';
 import { fmtAmount } from '../lib/format.js';
-import { closeMaciaModal, loadMaciaFromGAS, refreshMacia, saveMacia } from './macia.js';
+import { closeBalanceModal, closeMaciaModal, closeRepartoModal, loadMaciaFromGAS, refreshMacia, saveMacia } from './macia.js';
 import { loadDebtsFromGAS, refreshDebts, saveDebts } from './debts.js';
 import { closeDayTips } from '../ui/menus.js';
 import { showNotification } from '../ui/notify.js';
@@ -17,6 +17,8 @@ document.addEventListener('keydown', e => {
   closeModal();
   closeConfirm();
   closeMaciaModal();
+  closeRepartoModal();
+  closeBalanceModal();
 });
 
 /* ── MODAL ──────────────────────────────────────────── */

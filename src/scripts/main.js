@@ -4,7 +4,7 @@ import { setupCombo } from './ui/combo.js';
 import { loadData } from './features/data.js';
 import { applyExpFilters, sortExpBy } from './features/expenses.js';
 import { fmtAmountInput } from './lib/format.js';
-import { applyMaciaFilters, cargaInicialMacia, closeMaciaModal, deleteMaciaTx, importMaciaCsv, loadMaciaFromGAS, loadMaciaStorage, openMaciaModal, refreshMacia, segSet, sortMaciaBy, submitMaciaModal } from './features/macia.js';
+import { applyMaciaFilters, balanceSync, cargaInicialMacia, closeBalanceModal, closeMaciaModal, closeRepartoModal, deleteMaciaTx, importMaciaCsv, loadMaciaFromGAS, loadMaciaStorage, openBalanceModal, openMaciaModal, openRepartoModal, refreshMacia, registrarReparto, segSet, sortMaciaBy, submitBalance, submitMaciaModal } from './features/macia.js';
 import { applyDebtFilters, closeDebtModal, deleteDebt, initDebts, openDebtModal, segSetDebt, sortDebtsBy, submitDebtModal, toggleDebtStatus } from './features/debts.js';
 import { toggleDayLabel, togglePaid, toggleRowMenu } from './ui/menus.js';
 import { closeConfirm, closeModal, confirmDeleteExecute, deleteRow, openCreateModal, openEditModal, submitModal } from './features/modal.js';
@@ -52,6 +52,8 @@ Object.assign(window, {
   confirmDeleteExecute, closeConfirm,
   togglePaid, toggleDayLabel, toggleRowMenu,
   openMaciaModal, submitMaciaModal, closeMaciaModal, deleteMaciaTx,
+  registrarReparto, openRepartoModal, closeRepartoModal,
+  openBalanceModal, closeBalanceModal, balanceSync, submitBalance,
   fmtAmountInput, importMaciaCsv, loadData,
   applyDebtFilters, sortDebtsBy, segSetDebt,
   openDebtModal, submitDebtModal, closeDebtModal, deleteDebt, toggleDebtStatus,

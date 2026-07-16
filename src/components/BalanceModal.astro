@@ -1,0 +1,48 @@
+<div class="modal-backdrop" id="balanceBackdrop" onclick="closeBalanceModal()"></div>
+<div class="modal" id="balanceModal">
+  <div class="modal-header">
+    <span class="modal-title">Balance de cuentas</span>
+    <button class="modal-close" onclick="closeBalanceModal()">✕</button>
+  </div>
+  <div class="modal-body">
+    <p class="balance-note">Ajusta dónde está la plata. El <b>total no cambia</b>: lo que le quitas a una cuenta se le suma a la otra.</p>
+    <div class="balance-grid">
+      <div class="form-group">
+        <label class="form-label"><span class="dot dot-nu"></span> Nu</label>
+        <input class="form-control" id="balNu" type="text" inputmode="numeric" oninput="balanceSync('nu')" />
+      </div>
+      <div class="form-group">
+        <label class="form-label"><span class="dot dot-nequi"></span> Nequi</label>
+        <input class="form-control" id="balNequi" type="text" inputmode="numeric" oninput="balanceSync('nequi')" />
+      </div>
+    </div>
+    <div class="balance-total-row">
+      <span>Total (fijo)</span>
+      <b id="balTotal">$0</b>
+    </div>
+    <div class="balance-hint" id="balHint">Sin cambios.</div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-cancel" onclick="closeBalanceModal()">Cancelar</button>
+    <button class="btn-save" onclick="submitBalance()">Guardar traslado</button>
+  </div>
+</div>
+
+<style>
+  /* Markup estático: el scoping de Astro sí aplica aquí. */
+  .balance-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .balance-note { margin: 0 0 16px; font-size: 12px; line-height: 1.5; color: var(--text-muted); }
+  .balance-note b { color: var(--text); }
+  .balance-total-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border);
+    font-size: 13px; color: var(--text-muted);
+  }
+  .balance-total-row b { color: var(--text); font-size: 16px; }
+  .balance-hint {
+    margin-top: 10px; padding: 9px 12px; border-radius: 8px; text-align: center;
+    font-size: 13px; font-weight: 600; color: var(--text-muted);
+    background: var(--surface-2, rgba(255,255,255,.03));
+  }
+  .balance-hint.active { color: #fbbf24; background: rgba(251,191,36,.10); }
+</style>
