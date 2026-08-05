@@ -12,7 +12,11 @@
           Miguel Camacho  → 80%
         Total Cuellar = sueldo + 20% del sobrante.
      4. Si el neto NO alcanza para el sueldo → mes "insuficiente":
-        no se sugiere reparto.
+        se le paga a Cuellar hasta el sueldo tomando del SALDO TOTAL
+        del negocio (no solo del neto del mes): sueldo = min(sueldo,
+        saldo total disponible). Ese mes puede quedar en negativo (usa
+        ahorro de meses anteriores); el saldo total baja. Sin 20/80.
+        Si no hay saldo disponible (≤ 0) no se paga nada.
 
    Módulo PURO (sin DOM): recibe las transacciones y devuelve datos.
    La UI vive aparte.
@@ -53,7 +57,10 @@ export function isReparto(t) {
 /* ── CÁLCULO POR MES ──────────────────────────────────── */
 // Agrupa las transacciones por mes ('YYYY-MM') y calcula el reparto.
 // Devuelve un arreglo ordenado del mes más reciente al más viejo.
-export function calcRepartoMensual(maciaTx) {
+// `disponibleInsuf`: saldo total del negocio (Nu+Nequi) para pagar el sueldo
+// en meses insuficientes. Si es null, cae al neto del mes (comportamiento
+// viejo, backward-safe).
+export function calcRepartoMensual(maciaTx, disponibleInsuf = null) {
   const meses = {};   // 'YYYY-MM' -> acumulador
 
   maciaTx.forEach(t => {
@@ -86,21 +93,31 @@ export function calcRepartoMensual(maciaTx) {
     .map(m => {
       const neto       = m.ingresos - m.egresos;
       const suficiente = neto >= SUELDO_CUELLAR;
+      // Mes insuficiente: a Cuellar se le paga hasta el sueldo, tomando del
+      // saldo total disponible (no solo del neto del mes). Nunca negativo,
+      // nunca más que el sueldo. El mes puede quedar en rojo; el total baja.
+      const disp       = disponibleInsuf == null ? neto : disponibleInsuf;
+      const sueldo     = suficiente ? SUELDO_CUELLAR : Math.max(0, Math.min(SUELDO_CUELLAR, disp));
       const sobrante   = suficiente ? neto - SUELDO_CUELLAR : 0;
       const cuellar20  = suficiente ? Math.round(sobrante * PCT_CUELLAR) : 0;
       const camacho80  = suficiente ? sobrante - cuellar20 : 0;   // el resto: evita fuga por redondeo
       const hasReparto = m.doneSueldo || m.doneCuellar || m.doneCamacho;
+      // Insuficiente completo = con solo el sueldo (no hay 20/80 por registrar).
+      // Si sueldo es 0 (mes en pérdida) no hay nada que registrar.
+      const completo   = suficiente
+        ? (m.doneSueldo && m.doneCuellar && m.doneCamacho)
+        : (sueldo === 0 || m.doneSueldo);
       return {
         ...m,
         neto,
         suficiente,
-        sueldo:       suficiente ? SUELDO_CUELLAR : 0,
+        sueldo,
         sobrante,
         cuellar20,
         camacho80,
-        cuellarTotal: suficiente ? SUELDO_CUELLAR + cuellar20 : 0,
+        cuellarTotal: sueldo + cuellar20,
         hasReparto,
-        completo:     m.doneSueldo && m.doneCuellar && m.doneCamacho,
+        completo,
       };
     })
     .sort((a, b) => (a.mk < b.mk ? 1 : -1));

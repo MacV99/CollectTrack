@@ -389,7 +389,7 @@ export function importMaciaCsv(event) {
 // Se abre al clickear el separador de mes en el historial. Muestra los
 // 3 pagos ya calculados; cada uno se agrega como movimiento de ese mes.
 export function openRepartoModal(mk) {
-  const m = calcRepartoMensual(state.maciaTx).find(x => x.mk === mk);
+  const m = calcRepartoMensual(state.maciaTx, getMaciaBalances().total).find(x => x.mk === mk);
   document.getElementById('repartoModalTitle').textContent = `Reparto · ${maciaMonthLabel(mk)}`;
   document.getElementById('repartoModalBody').innerHTML = repartoModalBodyHTML(mk, m);
   document.getElementById('repartoBackdrop').style.display = 'block';
@@ -403,18 +403,27 @@ export function closeRepartoModal() {
 
 // Arma el cuerpo del modal. Si el mes no alcanza el sueldo, avisa.
 function repartoModalBodyHTML(mk, m) {
-  if (!m || !m.suficiente) {
-    const neto = m ? m.neto : 0;
-    return `<p class="reparto-modal-note">El neto de este mes es <b>${fmtAmount(neto)}</b>,
-      no alcanza el sueldo de ${fmtAmount(SUELDO_CUELLAR)}. No hay reparto por agregar.</p>`;
+  // Sin saldo disponible (sueldo 0): no hay nada que pagar.
+  if (!m || m.sueldo === 0) {
+    return `<p class="reparto-modal-note">No hay saldo disponible para repartir.</p>`;
   }
 
-  const resumen = `<div class="reparto-modal-resumen">
-    <span>Neto del mes <b>${fmtAmount(m.neto)}</b></span>
-    <span>Sobrante a repartir <b>${fmtAmount(m.sobrante)}</b></span>
-  </div>`;
+  // Mes insuficiente: se paga a Cuellar hasta el sueldo tomando del saldo
+  // total del negocio (sin 20/80). El mes puede quedar en rojo; el total baja.
+  // Solo la línea del sueldo.
+  const resumen = m.suficiente
+    ? `<div class="reparto-modal-resumen">
+        <span>Neto del mes <b>${fmtAmount(m.neto)}</b></span>
+        <span>Sobrante a repartir <b>${fmtAmount(m.sobrante)}</b></span>
+      </div>`
+    : `<p class="reparto-modal-note">El neto (<b>${fmtAmount(m.neto)}</b>) no alcanza el
+        sueldo de ${fmtAmount(SUELDO_CUELLAR)}. Se le paga a Cuellar <b>${fmtAmount(m.sueldo)}</b>
+        del saldo total; este mes queda en rojo y el total baja.</p>`;
 
-  const rows = repartoLines(m).map(l => {
+  // Insuficiente: solo la línea del sueldo (20/80 van en 0, no se muestran).
+  const lines = m.suficiente ? repartoLines(m) : repartoLines(m).filter(l => l.kind === 'sueldo');
+
+  const rows = lines.map(l => {
     const action = l.done
       ? '<span class="reparto-line-done">✓ Agregado</span>'
       : (state.role === 'socio'
@@ -439,11 +448,12 @@ function repartoModalBodyHTML(mk, m) {
 export function registrarReparto(mk, kind) {
   if (state.role === 'socio') return;   // socio: solo lectura
 
-  const m = calcRepartoMensual(state.maciaTx).find(x => x.mk === mk);
-  if (!m || !m.suficiente) return;
+  const m = calcRepartoMensual(state.maciaTx, getMaciaBalances().total).find(x => x.mk === mk);
+  if (!m) return;
 
   const p = repartoLines(m).find(l => l.kind === kind);
   if (!p || p.done || !p.amount) return;   // ya registrado o sin monto
+  // Mes insuficiente: solo el sueldo (20/80 vienen en 0 → los frena !p.amount).
 
   const post = createMaciaTx({ date: `${mk}-01`, concept: p.concept,
     amount: p.amount, type: 'egreso', account: 'nu' });
