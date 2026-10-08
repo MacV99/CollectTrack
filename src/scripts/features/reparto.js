@@ -23,7 +23,18 @@
    ============================================================ */
 
 /* ── PARÁMETROS DEL REPARTO ───────────────────────────── */
-export const SUELDO_CUELLAR = 1750000;   // sueldo fijo mensual Miguel Cuellar
+// Sueldo fijo mensual Miguel Cuellar. Sube por tramos: cada entrada rige
+// desde su mes ('YYYY-MM') en adelante; los meses anteriores conservan el
+// sueldo viejo (para no alterar repartos ya calculados/pagados).
+export const SUELDOS_CUELLAR = [
+  { desde: '0000-00', monto: 1750000 },
+  { desde: '2026-10', monto: 2000000 },
+];
+export function sueldoDelMes(mk) {
+  let monto = SUELDOS_CUELLAR[0].monto;
+  for (const s of SUELDOS_CUELLAR) if (mk >= s.desde) monto = s.monto;
+  return monto;
+}
 export const PCT_CUELLAR     = 0.20;      // 20% del sobrante para Cuellar
 export const PCT_CAMACHO     = 0.80;      // 80% del sobrante para Camacho
 
@@ -92,13 +103,14 @@ export function calcRepartoMensual(maciaTx, disponibleInsuf = null) {
   return Object.values(meses)
     .map(m => {
       const neto       = m.ingresos - m.egresos;
-      const suficiente = neto >= SUELDO_CUELLAR;
+      const sueldoBase = sueldoDelMes(m.mk);
+      const suficiente = neto >= sueldoBase;
       // Mes insuficiente: a Cuellar se le paga hasta el sueldo, tomando del
       // saldo total disponible (no solo del neto del mes). Nunca negativo,
       // nunca más que el sueldo. El mes puede quedar en rojo; el total baja.
       const disp       = disponibleInsuf == null ? neto : disponibleInsuf;
-      const sueldo     = suficiente ? SUELDO_CUELLAR : Math.max(0, Math.min(SUELDO_CUELLAR, disp));
-      const sobrante   = suficiente ? neto - SUELDO_CUELLAR : 0;
+      const sueldo     = suficiente ? sueldoBase : Math.max(0, Math.min(sueldoBase, disp));
+      const sobrante   = suficiente ? neto - sueldoBase : 0;
       const cuellar20  = suficiente ? Math.round(sobrante * PCT_CUELLAR) : 0;
       const camacho80  = suficiente ? sobrante - cuellar20 : 0;   // el resto: evita fuga por redondeo
       const hasReparto = m.doneSueldo || m.doneCuellar || m.doneCamacho;
@@ -111,6 +123,7 @@ export function calcRepartoMensual(maciaTx, disponibleInsuf = null) {
         ...m,
         neto,
         suficiente,
+        sueldoBase,
         sueldo,
         sobrante,
         cuellar20,

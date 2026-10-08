@@ -96,3 +96,17 @@ export function formatAgo(ts) {
   if (h < 24) return `hace ${h}h`;
   return `hace ${Math.floor(h / 24)}d`;
 }
+
+// Fecha de hoy 'YYYY-MM-DD' en hora LOCAL. (toISOString() usa UTC: en
+// Colombia, después de las 7 p. m. devolvía la fecha de mañana.)
+export function todayISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// Escapa texto del usuario antes de meterlo en innerHTML (evita que un
+// '<' o una comilla en un concepto/nota rompa la fila).
+export function escHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}

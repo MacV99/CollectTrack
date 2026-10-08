@@ -4,7 +4,7 @@
    localStorage sigue siendo la caché offline (DEBTS_KEY). */
 import { fetchJSONP, postData } from '../lib/api.js';
 import { API_URL } from '../config.js';
-import { fmtAmount, normMaciaDate, parseAmount } from '../lib/format.js';
+import { fmtAmount, normMaciaDate, parseAmount, todayISO, escHtml } from '../lib/format.js';
 import { showNotification } from '../ui/notify.js';
 import { buildRowMenu, ROW_MENU_ICONS } from '../ui/rowMenu.js';
 import { state } from '../state.js';
@@ -187,8 +187,8 @@ export function renderDebtsTable() {
     const amtSign  = d.type === 'me_deben' ? '+' : '−';
     const rawNote  = d.note || '';
     const note = rawNote.length > 45
-      ? `<span title="${rawNote}">${rawNote.slice(0, 45)}…</span>`
-      : (rawNote || '<span style="color:var(--text-muted)">—</span>');
+      ? `<span title="${escHtml(rawNote)}">${escHtml(rawNote.slice(0, 45))}…</span>`
+      : (escHtml(rawNote) || '<span style="color:var(--text-muted)">—</span>');
     const paid = d.status === 'pagada';
     // Sin _row = aún no sincronizada con Sheets: se muestra atenuada y sin
     // acciones (no se puede editar/borrar una fila que aún no existe en la hoja).
@@ -198,7 +198,7 @@ export function renderDebtsTable() {
 
     return `<tr data-status="${d.status}" style="animation-delay:${i * 30}ms${rowOpacity}"${rowTitle}>
       <td style="white-space:nowrap;font-size:12px" data-label="Fecha">${d.date || '—'}</td>
-      <td class="td-name" data-label="Persona" style="font-size:13px">${d.person || '—'}</td>
+      <td class="td-name" data-label="Persona" style="font-size:13px">${escHtml(d.person) || '—'}</td>
       <td class="td-amount" data-label="Monto" style="color:${amtColor}">${amtSign}${fmtAmount(d.amount)}</td>
       <td data-label="Tipo"><span class="badge ${tm.badge}"><span class="dot ${tm.dot}"></span>${tm.label}</span></td>
       <td data-label="Estado"><span class="badge ${sm.badge}"><span class="dot ${sm.dot}"></span>${sm.label}</span></td>
@@ -252,7 +252,7 @@ export function openDebtModal(id) {
   } else {
     document.getElementById('debtModalTitle').textContent = 'Nueva deuda';
     document.getElementById('dfPerson').value = '';
-    document.getElementById('dfDate').value   = new Date().toISOString().slice(0, 10);
+    document.getElementById('dfDate').value   = todayISO();
     document.getElementById('dfAmount').value = '';
     segSetDebtValue('me_deben');
     document.getElementById('dfNote').value   = '';
@@ -323,7 +323,7 @@ export function deleteDebt(id) {
   const d = state.debts.find(x => x.id === id);
   if (!d) return;
   document.getElementById('confirmMsg').innerHTML =
-    `¿Eliminar la deuda de <b style="color:var(--text)">${d.person}</b>?<br>` +
+    `¿Eliminar la deuda de <b style="color:var(--text)">${escHtml(d.person)}</b>?<br>` +
     `<span style="color:var(--text-muted);font-size:11px">Esta acción no se puede deshacer.</span>`;
   state._pendingDebtDelete = { id, row: d._row };
   document.getElementById('confirmBackdrop').style.display = 'block';

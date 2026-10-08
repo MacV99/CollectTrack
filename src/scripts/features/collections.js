@@ -1,5 +1,5 @@
 /* collections.js — generado por refactor modular */
-import { catStyle, fmtAmount, normPeriod, parseAmount } from '../lib/format.js';
+import { catStyle, fmtAmount, normPeriod, parseAmount, escHtml } from '../lib/format.js';
 import { dayChip, payCheckBtn, payStatus, rowMenu } from '../ui/menus.js';
 import { state } from '../state.js';
 
@@ -115,7 +115,7 @@ export function renderTable() {
     const dateCell = dayChip(r);
 
     return `<tr data-status="${payStatus(r)}" style="animation-delay:${i * 35}ms">
-      <td class="td-name" data-label="Nombre">${r.name}</td>
+      <td class="td-name" data-label="Nombre">${escHtml(r.name)}</td>
       <td data-label="Día">${dateCell}</td>
       <td class="td-amount" data-label="Monto">${r.rawAmount || '—'}</td>
       <td data-label="Categoría">${catCell}</td>

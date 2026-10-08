@@ -2,12 +2,12 @@
 import { fetchJSONP, postData } from '../lib/api.js';
 import { API_URL } from '../config.js';
 import { parseCsv } from '../lib/csv.js';
-import { fmtAmount, fmtAmountInput, normMaciaDate, parseAmount } from '../lib/format.js';
+import { fmtAmount, fmtAmountInput, normMaciaDate, parseAmount, todayISO, escHtml } from '../lib/format.js';
 import { showNotification } from '../ui/notify.js';
 import { buildRowMenu, ROW_MENU_ICONS } from '../ui/rowMenu.js';
 import { state } from '../state.js';
 import { saveTag } from '../lib/storage.js';
-import { calcRepartoMensual, repartoLines, saldoPorMes, SUELDO_CUELLAR, isTraslado,
+import { calcRepartoMensual, repartoLines, saldoPorMes, isTraslado,
   CONCEPTO_TRASLADO } from './reparto.js';
 
 export function mapMaciaRow(r) {
@@ -189,13 +189,13 @@ export function renderMaciaTable() {
     const amtSign      = t.type === 'ingreso' ? '+' : '−';
     const rawObs       = t.observations || '';
     const obs          = rawObs.length > 45
-      ? `<span title="${rawObs}">${rawObs.slice(0,45)}…</span>`
-      : (rawObs || '<span style="color:var(--text-muted)">—</span>');
+      ? `<span title="${escHtml(rawObs)}">${escHtml(rawObs.slice(0,45))}…</span>`
+      : (escHtml(rawObs) || '<span style="color:var(--text-muted)">—</span>');
 
     const pending = !t._row ? ' style="opacity:.65" title="Sincronizando…"' : '';
     return sep + `<tr style="animation-delay:${i*30}ms"${pending}>
       <td style="white-space:nowrap;font-size:12px">${t.date || '—'}</td>
-      <td class="td-name" style="font-size:13px">${t.concept || '—'}</td>
+      <td class="td-name" style="font-size:13px">${escHtml(t.concept) || '—'}</td>
       <td class="td-amount" style="color:${amtColor}">${amtSign}${fmtAmount(t.amount)}</td>
       <td>${typeBadge}</td>
       <td>${accountBadge}</td>
@@ -228,7 +228,7 @@ export function openMaciaModal(id) {
     document.getElementById('mfObs').value     = t.observations || '';
   } else {
     document.getElementById('maciaModalTitle').textContent = 'Nuevo movimiento';
-    document.getElementById('mfDate').value    = new Date().toISOString().slice(0, 10);
+    document.getElementById('mfDate').value    = todayISO();
     document.getElementById('mfConcept').value = '';
     document.getElementById('mfAmount').value  = '';
     segSetValue('segType',    'ingreso');
@@ -315,7 +315,7 @@ export function deleteMaciaTx(id, row) {
   const t = state.maciaTx.find(x => x.id === id);
   if (!t) return;
   document.getElementById('confirmMsg').innerHTML =
-    `¿Eliminar <b style="color:var(--text)">${t.concept}</b>?<br>` +
+    `¿Eliminar <b style="color:var(--text)">${escHtml(t.concept)}</b>?<br>` +
     `<span style="color:var(--text-muted);font-size:11px">Esta acción no se puede deshacer.</span>`;
   state._pendingMaciaDelete = { id, row };
   document.getElementById('confirmBackdrop').style.display = 'block';
@@ -372,13 +372,15 @@ export function importMaciaCsv(event) {
       showNotification(`${newItems.length} importados — sincronizando…`);
 
       if (API_URL) {
-        await Promise.allSettled(newItems.map(t =>
+        const res = await Promise.allSettled(newItems.map(t =>
           postData({action:'create',sheet:'macia',
             ID:t.id,DATE:t.date,CONCEPT:t.concept,AMOUNT:t.amount,
             TYPE:t.type,ACCOUNT:t.account,OBSERVATIONS:t.observations,CREATED_AT:t.createdAt})
         ));
         await loadMaciaFromGAS();
-        showNotification(`${newItems.length} guardados en Sheets ✓`);
+        const fails = res.filter(r => r.status === 'rejected').length;
+        if (fails) showNotification(`${newItems.length - fails} guardados, ${fails} fallaron. Revisa e importa de nuevo esos.`, 'err');
+        else       showNotification(`${newItems.length} guardados en Sheets ✓`);
       }
     } catch(err){ showNotification('Error: '+err.message,'err'); }
   };
@@ -417,7 +419,7 @@ function repartoModalBodyHTML(mk, m) {
         <span>Sobrante a repartir <b>${fmtAmount(m.sobrante)}</b></span>
       </div>`
     : `<p class="reparto-modal-note">El neto (<b>${fmtAmount(m.neto)}</b>) no alcanza el
-        sueldo de ${fmtAmount(SUELDO_CUELLAR)}. Se le paga a Cuellar <b>${fmtAmount(m.sueldo)}</b>
+        sueldo de ${fmtAmount(m.sueldoBase)}. Se le paga a Cuellar <b>${fmtAmount(m.sueldo)}</b>
         del saldo total; este mes queda en rojo y el total baja.</p>`;
 
   // Insuficiente: solo la línea del sueldo (20/80 van en 0, no se muestran).
@@ -534,7 +536,7 @@ export function submitBalance() {
   if (!delta) { closeBalanceModal(); return; }
 
   const amount = Math.abs(delta);
-  const date = new Date().toISOString().slice(0, 10);
+  const date = todayISO();
   // delta>0: la plata ENTRA a Nu (ingreso Nu) y SALE de Nequi (egreso Nequi).
   // delta<0: SALE de Nu (egreso Nu) y ENTRA a Nequi (ingreso Nequi).
   const legs = delta > 0
@@ -548,7 +550,12 @@ export function submitBalance() {
 
   if (API_URL) {
     showNotification('Balance ajustado — sincronizando…');
-    Promise.allSettled(posts).then(() => { showNotification('Balance ajustado ✓'); loadMaciaFromGAS(); });
+    Promise.allSettled(posts).then(res => {
+      // Si una de las 2 patas falla, el balance queda descuadrado: avisar.
+      if (res.some(r => r.status === 'rejected')) showNotification('Error al guardar el traslado. Revisa el balance.', 'err');
+      else showNotification('Balance ajustado ✓');
+      loadMaciaFromGAS();
+    });
   } else {
     showNotification('Balance ajustado ✓');
   }
