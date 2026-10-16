@@ -229,7 +229,7 @@ export function toggleDebtStatus(id) {
   refreshDebts();
   const msg = newStatus === 'pagada' ? 'Marcada como pagada ✓' : 'Marcada pendiente';
   if (API_URL && d._row) {
-    postData({ action: 'update', sheet: 'deudas', _row: d._row, STATUS: newStatus })
+    postData({ action: 'update', sheet: 'deudas', _row: d._row, ID: d.id, STATUS: newStatus })
       .then(() => showNotification(msg))
       .catch(err => { showNotification('Error: ' + err.message, 'err'); loadDebtsFromGAS(); });
   } else {
@@ -299,7 +299,7 @@ export function submitDebtModal() {
     saveDebts(); refreshDebts(); closeDebtModal();
     // STATUS se maneja aparte (toggleDebtStatus): no se envía en la edición.
     if (API_URL && d._row) {
-      postData({ action: 'update', sheet: 'deudas', _row: d._row,
+      postData({ action: 'update', sheet: 'deudas', _row: d._row, ID: d.id,
         PERSON: person, DATE: date, AMOUNT: amount, TYPE: type, NOTE: note })
         .then(() => showNotification('Actualizado ✓'))
         .catch(err => { showNotification('Error: ' + err.message, 'err'); loadDebtsFromGAS(); });

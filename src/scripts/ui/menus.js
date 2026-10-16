@@ -4,7 +4,7 @@ import { API_URL } from '../config.js';
 import { loadData, refreshAll } from '../features/data.js';
 import { currentPeriod } from '../lib/format.js';
 import { showNotification } from './notify.js';
-import { resolveRow, state } from '../state.js';
+import { resolveRow, rowMatch, state } from '../state.js';
 import { saveCache } from '../lib/storage.js';
 import { buildRowMenu, ROW_MENU_ICONS } from './rowMenu.js';
 
@@ -94,7 +94,7 @@ export function togglePaid(sheet, rowNum) {
   saveCache(state.allData, state.allExpenses);
   refreshAll();
 
-  postData({ action: 'setPaid', sheet, _row: r._row, PAID: newVal })
+  postData({ action: 'setPaid', sheet, _row: r._row, PAID: newVal, ...rowMatch(sheet, r) })
     .then(() => showNotification(newVal ? 'Marcado al día ✓' : 'Marcado pendiente'))
     .catch(err => { showNotification('Error: ' + err.message, 'err'); loadData(); });
 }

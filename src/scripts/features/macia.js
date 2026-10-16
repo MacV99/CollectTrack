@@ -294,7 +294,7 @@ export function submitMaciaModal() {
     state.maciaTx[idx] = { ...t, date, concept, amount, type, account, observations: obs };
     saveMacia(); refreshMacia(); closeMaciaModal();
     if (API_URL && t._row) {
-      postData({ action: 'update', sheet: 'macia', _row: t._row,
+      postData({ action: 'update', sheet: 'macia', _row: t._row, ID: t.id,
         DATE: date, CONCEPT: concept, AMOUNT: amount, TYPE: type, ACCOUNT: account, OBSERVATIONS: obs })
         .then(() => showNotification('Actualizado ✓'))
         .catch(err => { showNotification('Error: ' + err.message, 'err'); loadMaciaFromGAS(); });

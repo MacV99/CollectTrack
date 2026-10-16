@@ -7,7 +7,7 @@ import { closeBalanceModal, closeMaciaModal, closeRepartoModal, loadMaciaFromGAS
 import { loadDebtsFromGAS, refreshDebts, saveDebts } from './debts.js';
 import { closeDayTips } from '../ui/menus.js';
 import { showNotification } from '../ui/notify.js';
-import { resolveRow, state } from '../state.js';
+import { resolveRow, rowMatch, shiftRowsAfterDelete, state } from '../state.js';
 import { saveCache, saveTag } from '../lib/storage.js';
 
 document.addEventListener('keydown', e => {
@@ -122,7 +122,7 @@ export async function submitModal() {
     refreshAll();
     closeModal();
 
-    const payload = { action: 'update', sheet: state.modalSheet, _row: r._row };
+    const payload = { action: 'update', sheet: state.modalSheet, _row: r._row, ...rowMatch(state.modalSheet, r) };
     Object.assign(payload, state.modalSheet === 'cobros'
       ? { NAME: name, CATEGORY: category, AMOUNT: amount, DATE: date }
       : { CATEGORY: category, AMOUNT: amount, DATE: date });
@@ -157,13 +157,16 @@ export function closeConfirm() {
 
 export function confirmDeleteExecute() {
   if (state._pendingDebtDelete !== null) {
-    const { id, row } = state._pendingDebtDelete;
+    const { id } = state._pendingDebtDelete;
     closeConfirm();
+    // _row actual (no el capturado al abrir el confirm): pudo reajustarse.
+    const row = (state.debts.find(x => x.id === id) || {})._row;
     state.debts = state.debts.filter(x => x.id !== id);
+    shiftRowsAfterDelete(state.debts, row);
     saveDebts();
     refreshDebts();
     if (API_URL && row) {
-      postData({ action: 'delete', sheet: 'deudas', _row: row })
+      postData({ action: 'delete', sheet: 'deudas', _row: row, ID: id })
         .then(() => showNotification('Eliminado ✓'))
         .catch(err => { showNotification('Error: ' + err.message, 'err'); loadDebtsFromGAS(); });
     } else {
@@ -172,13 +175,15 @@ export function confirmDeleteExecute() {
     return;
   }
   if (state._pendingMaciaDelete !== null) {
-    const { id, row } = state._pendingMaciaDelete;
+    const { id } = state._pendingMaciaDelete;
     closeConfirm();
+    const row = (state.maciaTx.find(x => x.id === id) || {})._row;
     state.maciaTx = state.maciaTx.filter(x => x.id !== id);
+    shiftRowsAfterDelete(state.maciaTx, row);
     saveMacia();
     refreshMacia();
     if (API_URL && row) {
-      postData({ action: 'delete', sheet: 'macia', _row: row })
+      postData({ action: 'delete', sheet: 'macia', _row: row, ID: id })
         .then(() => showNotification('Eliminado ✓'))
         .catch(err => { showNotification('Error: ' + err.message, 'err'); loadMaciaFromGAS(); });
     } else {
@@ -195,10 +200,11 @@ export function confirmDeleteExecute() {
   const rowNum = r._row;
 
   allArr.splice(allIdx, 1);
+  shiftRowsAfterDelete(allArr, rowNum);
   saveCache(state.allData, state.allExpenses);
   refreshAll();
 
-  postData({ action: 'delete', sheet, _row: rowNum })
+  postData({ action: 'delete', sheet, _row: rowNum, ...rowMatch(sheet, r) })
     .then(() => showNotification('Eliminado ✓'))
     .catch(err => { showNotification('Error: ' + err.message, 'err'); loadData(); });
 }

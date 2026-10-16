@@ -128,6 +128,51 @@ function getHeaderMap(sheet) {
   return map;
 }
 
+// ── RESOLVER FILA OBJETIVO ───────────────────────────────────────────────────
+// El cliente manda _row, pero puede estar desfasado (otra fila se borró antes
+// y las de abajo subieron, o la caché es vieja). Antes de tocar la fila se
+// verifica que sea el registro correcto:
+//   - macia/deudas: por ID.
+//   - cobros/pagos: por _mNAME/_mCATEGORY + _mAMOUNT (valores previos).
+// Si _row no coincide se busca el registro; si no aparece → error (mejor no
+// tocar nada que borrar/editar el equivocado). Sin datos de verificación
+// (clientes viejos) se usa _row tal cual.
+function resolveTargetRow(sheet, p) {
+  const rowNum = Number(p._row);
+  const colMap = getHeaderMap(sheet);
+  const last   = sheet.getLastRow();
+  const norm   = v => String(v == null ? '' : v).trim().toLowerCase();
+  const digits = v => String(v == null ? '' : v).replace(/[^\d]/g, '');
+
+  let checks = [];
+  if (p.ID && colMap['ID']) {
+    checks = [['ID', norm(p.ID), norm]];
+  } else if (p._mAMOUNT !== undefined && colMap['AMOUNT']) {
+    checks.push(['AMOUNT', digits(p._mAMOUNT), digits]);
+    if (p._mNAME     !== undefined && colMap['NAME'])     checks.push(['NAME',     norm(p._mNAME),     norm]);
+    if (p._mCATEGORY !== undefined && colMap['CATEGORY']) checks.push(['CATEGORY', norm(p._mCATEGORY), norm]);
+  }
+  if (!checks.length) return rowNum;
+  if (last < 2) throw new Error('Registro no encontrado, actualiza');
+
+  const lastCol = sheet.getLastColumn();
+  const data    = sheet.getRange(2, 1, last - 1, lastCol).getValues();
+  const matches = r => checks.every(([col, want, f]) => f(data[r - 2][colMap[col] - 1]) === want);
+
+  if (rowNum >= 2 && rowNum <= last && matches(rowNum)) return rowNum;
+
+  // Legacy macia/deudas: fila sin ID en la hoja (el cliente generó uno local).
+  if (p.ID && rowNum >= 2 && rowNum <= last && norm(data[rowNum - 2][colMap['ID'] - 1]) === '') return rowNum;
+
+  // Busca la coincidencia más cercana a _row (desfase típico: 1–2 filas).
+  let best = null;
+  for (let r = 2; r <= last; r++) {
+    if (matches(r) && (best === null || Math.abs(r - rowNum) < Math.abs(best - rowNum))) best = r;
+  }
+  if (best === null) throw new Error('Registro no encontrado, actualiza');
+  return best;
+}
+
 // ── CREATE ───────────────────────────────────────────────────────────────────
 function rowCreate(sheetName, p) {
   const sheet = SS.getSheetByName(sheetName);
@@ -158,7 +203,7 @@ function rowUpdate(sheetName, p) {
   if (!cols)  return { ok: false, error: 'Hoja no configurada: ' + sheetName };
 
   const colMap = getHeaderMap(sheet);
-  const rowNum = Number(p._row);
+  const rowNum = resolveTargetRow(sheet, p);
   cols.forEach(col => {
     // ID y CREATED_AT no se sobreescriben en una edición.
     if (col === 'ID' || col === 'CREATED_AT') return;
@@ -178,7 +223,7 @@ function rowDelete(sheetName, p) {
   if (!sheet)  return { ok: false, error: 'Hoja no encontrada: ' + sheetName };
   if (!p._row) return { ok: false, error: '_row requerido' };
 
-  sheet.deleteRow(Number(p._row));
+  sheet.deleteRow(resolveTargetRow(sheet, p));
   return { ok: true };
 }
 
@@ -190,7 +235,7 @@ function rowSetPaid(sheetName, p) {
   if (!p._row) return { ok: false, error: '_row requerido' };
 
   const col = getOrCreatePaidCol(sheet);
-  sheet.getRange(Number(p._row), col).setValue(p.PAID || '');
+  sheet.getRange(resolveTargetRow(sheet, p), col).setValue(p.PAID || '');
   return { ok: true };
 }
 
