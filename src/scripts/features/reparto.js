@@ -37,6 +37,10 @@ export function sueldoDelMes(mk) {
 }
 export const PCT_CUELLAR     = 0.20;      // 20% del sobrante para Cuellar
 export const PCT_CAMACHO     = 0.80;      // 80% del sobrante para Camacho
+// Colchón: plata que SIEMPRE se queda en la cuenta (Nu+Nequi) para gastos
+// repentinos. No se reparte en el 20/80; el sueldo de Cuellar sí puede
+// tomar de aquí.
+export const COLCHON         = 450000;
 
 /* Conceptos canónicos que genera el botón "Registrar reparto".
    Al crearlos SIEMPRE con este texto, la detección deja de ser frágil. */
@@ -110,14 +114,26 @@ export function calcRepartoMensual(maciaTx, disponibleInsuf = null) {
       // nunca más que el sueldo. El mes puede quedar en rojo; el total baja.
       const disp       = disponibleInsuf == null ? neto : disponibleInsuf;
       const sueldo     = suficiente ? sueldoBase : Math.max(0, Math.min(sueldoBase, disp));
-      const sobrante   = suficiente ? neto - sueldoBase : 0;
+      let sobrante     = suficiente ? neto - sueldoBase : 0;
+      // Colchón: el 20/80 pendiente no puede dejar el saldo total por debajo
+      // de COLCHON. El sueldo de Cuellar SÍ puede tomar del colchón.
+      // Si el 20/80 ya empezó a pagarse, no se recalcula para no descuadrarlo.
+      let recorteColchon = 0;
+      if (disponibleInsuf != null) {
+        const libreTrasSueldo = disponibleInsuf - COLCHON - (m.doneSueldo ? 0 : sueldo);
+        if (suficiente && !m.doneCuellar && !m.doneCamacho) {
+          const tope = Math.max(0, Math.min(sobrante, libreTrasSueldo));
+          recorteColchon += sobrante - tope;
+          sobrante = tope;
+        }
+      }
       const cuellar20  = suficiente ? Math.round(sobrante * PCT_CUELLAR) : 0;
       const camacho80  = suficiente ? sobrante - cuellar20 : 0;   // el resto: evita fuga por redondeo
       const hasReparto = m.doneSueldo || m.doneCuellar || m.doneCamacho;
-      // Insuficiente completo = con solo el sueldo (no hay 20/80 por registrar).
-      // Si sueldo es 0 (mes en pérdida) no hay nada que registrar.
+      // Completo = cada línea está pagada o vale 0 (nada que registrar).
+      // Insuficiente: solo cuenta el sueldo (no hay 20/80).
       const completo   = suficiente
-        ? (m.doneSueldo && m.doneCuellar && m.doneCamacho)
+        ? ((m.doneSueldo || sueldo === 0) && (m.doneCuellar || cuellar20 === 0) && (m.doneCamacho || camacho80 === 0))
         : (sueldo === 0 || m.doneSueldo);
       return {
         ...m,
@@ -128,6 +144,7 @@ export function calcRepartoMensual(maciaTx, disponibleInsuf = null) {
         sobrante,
         cuellar20,
         camacho80,
+        recorteColchon,
         cuellarTotal: sueldo + cuellar20,
         hasReparto,
         completo,

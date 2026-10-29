@@ -8,7 +8,7 @@ import { buildRowMenu, ROW_MENU_ICONS } from '../ui/rowMenu.js';
 import { state } from '../state.js';
 import { saveTag } from '../lib/storage.js';
 import { calcRepartoMensual, repartoLines, saldoPorMes, isTraslado,
-  CONCEPTO_TRASLADO } from './reparto.js';
+  CONCEPTO_TRASLADO, COLCHON } from './reparto.js';
 
 export function mapMaciaRow(r) {
   return {
@@ -440,7 +440,13 @@ function repartoModalBodyHTML(mk, m) {
     </div>`;
   }).join('');
 
-  return resumen + rows;
+  // Si el colchón frenó parte del pago, avisa cuánto se queda en la cuenta.
+  const colchon = m.recorteColchon > 0
+    ? `<p class="reparto-modal-note">Se guardan <b>${fmtAmount(m.recorteColchon)}</b> para
+        mantener el colchón de ${fmtAmount(COLCHON)} en la cuenta.</p>`
+    : '';
+
+  return resumen + colchon + rows;
 }
 
 /* ── REGISTRAR UNA LÍNEA DE REPARTO (botón Agregar) ───── */
