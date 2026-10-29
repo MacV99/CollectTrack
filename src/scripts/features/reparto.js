@@ -117,18 +117,28 @@ export function calcRepartoMensual(maciaTx, disponibleInsuf = null) {
       let sobrante     = suficiente ? neto - sueldoBase : 0;
       // Colchón: el 20/80 pendiente no puede dejar el saldo total por debajo
       // de COLCHON. El sueldo de Cuellar SÍ puede tomar del colchón.
-      // Si el 20/80 ya empezó a pagarse, no se recalcula para no descuadrarlo.
+      // Si ninguna de las 2 se ha pagado, se recorta el sobrante (20/80 parejo);
+      // si una ya se pagó, solo se recorta la que falta.
       let recorteColchon = 0;
-      if (disponibleInsuf != null) {
-        const libreTrasSueldo = disponibleInsuf - COLCHON - (m.doneSueldo ? 0 : sueldo);
-        if (suficiente && !m.doneCuellar && !m.doneCamacho) {
-          const tope = Math.max(0, Math.min(sobrante, libreTrasSueldo));
-          recorteColchon += sobrante - tope;
-          sobrante = tope;
-        }
+      const libreTrasSueldo = disponibleInsuf == null ? Infinity
+        : disponibleInsuf - COLCHON - (m.doneSueldo ? 0 : sueldo);
+      if (suficiente && !m.doneCuellar && !m.doneCamacho) {
+        const tope = Math.max(0, Math.min(sobrante, libreTrasSueldo));
+        recorteColchon += sobrante - tope;
+        sobrante = tope;
       }
-      const cuellar20  = suficiente ? Math.round(sobrante * PCT_CUELLAR) : 0;
-      const camacho80  = suficiente ? sobrante - cuellar20 : 0;   // el resto: evita fuga por redondeo
+      let cuellar20    = suficiente ? Math.round(sobrante * PCT_CUELLAR) : 0;
+      let camacho80    = suficiente ? sobrante - cuellar20 : 0;   // el resto: evita fuga por redondeo
+      if (suficiente && m.doneCuellar && !m.doneCamacho) {
+        const tope = Math.max(0, Math.min(camacho80, libreTrasSueldo));
+        recorteColchon += camacho80 - tope;
+        camacho80 = tope;
+      }
+      if (suficiente && m.doneCamacho && !m.doneCuellar) {
+        const tope = Math.max(0, Math.min(cuellar20, libreTrasSueldo));
+        recorteColchon += cuellar20 - tope;
+        cuellar20 = tope;
+      }
       const hasReparto = m.doneSueldo || m.doneCuellar || m.doneCamacho;
       // Completo = cada línea está pagada o vale 0 (nada que registrar).
       // Insuficiente: solo cuenta el sueldo (no hay 20/80).
