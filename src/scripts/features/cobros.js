@@ -1,13 +1,18 @@
 /* cobros.js — Central de cobros: mensualidades de todos los sistemas (SaaS).
+   Vive dentro de MACV → Cobros: los clientes de los sistemas se mezclan con
+   tus personas en la misma lista (ver collections.js → cobrosRows) y aquí se
+   pintan "Pagos por confirmar" y el "Calendario de cobros" de todos.
    Habla con la sección "CENTRAL DE COBROS" de GAS_SCRIPT.js por JSONP.
    La clave del panel se pide una vez y queda en localStorage (COB_KEY).
-   Las filas se pintan con innerHTML y llaman a sus handlers por índice
-   (state.cob.clientes[i]) para no meter textos del usuario dentro del onclick. */
+   Las filas llaman a sus handlers por índice (state.cob.clientes[i]) para no
+   meter textos del usuario dentro del onclick. */
 import { API_URL } from '../config.js';
 import { fetchJSONP } from '../lib/api.js';
-import { escHtml, fmtAmount, parseAmount } from '../lib/format.js';
+import { currentPeriod, escHtml, fmtAmount, parseAmount } from '../lib/format.js';
 import { showNotification } from '../ui/notify.js';
+import { buildRowMenu, ROW_MENU_ICONS } from '../ui/rowMenu.js';
 import { state } from '../state.js';
+import { refreshAll } from './data.js';
 
 const COB_KEY = 'ct_cob_k';
 let cargando = null;
@@ -28,18 +33,21 @@ async function cob(action, params = {}) {
   return json;
 }
 
+// Sin clave: solo se ven tus personas y aparece el aviso para conectar.
 function pedirClave(err = '') {
   try { localStorage.removeItem(COB_KEY); } catch {}
-  document.getElementById('cobLogin').hidden = false;
-  document.getElementById('cobContenido').hidden = true;
+  const tenia = !!state.cob;
+  state.cob = null;
+  document.documentElement.classList.remove('cob-on');
+  document.getElementById('cobConectar').hidden = false;
   document.getElementById('cobLoginErr').textContent = err;
-  document.getElementById('cobClave').focus();
+  if (tenia) refreshAll(); else pintarCentral();
 }
 
-/* Se llama al abrir la pestaña COBROS: carga una vez (Actualizar recarga). */
-export function cobAbrir() {
+/* Al arrancar la app: carga la central si ya hay clave guardada. */
+export function cobInit() {
   if (!clave()) return pedirClave();
-  if (!state.cob) cobCargar();
+  cobCargar();
 }
 
 export function cobEntrar() {
@@ -53,25 +61,20 @@ export function cobEntrar() {
 
 export function cobCargar() {
   if (cargando) return cargando;
-  document.getElementById('cobReportes').innerHTML = filaVacia(1, 'Cargando…');
   cargando = cob('cobListar')
     .then(res => {
       state.cob = { hoy: res.hoy, sistemas: res.sistemas, clientes: res.clientes, reportes: res.reportes };
-      document.getElementById('cobLogin').hidden = true;
-      document.getElementById('cobContenido').hidden = false;
-      pintarFiltro();
-      cobFiltrar();
+      document.getElementById('cobConectar').hidden = true;
+      document.documentElement.classList.add('cob-on');
+      refreshAll();
     })
-    .catch(e => { if (e.message !== 'clave incorrecta') showNotification('Cobros: ' + e.message, 'err'); })
+    .catch(e => { if (e.message !== 'clave incorrecta') showNotification('Sistemas: ' + e.message, 'err'); })
     .finally(() => { cargando = null; });
   return cargando;
 }
 
-/* ── Helpers de pintado ─────────────────────────────── */
-const filaVacia = (cols, txt) => `<tr class="state-row"><td colspan="${cols}">${escHtml(txt)}</td></tr>`;
-const nombreSistema = id => (state.cob.sistemas.find(s => s.id === id) || {}).nombre || id;
-const chipSistema = id => `<span class="badge cat-default"><span class="dot dot-default"></span>${escHtml(nombreSistema(id))}</span>`;
-const badge = (tipo, txt) => `<span class="badge badge-${tipo}"><span class="dot dot-${tipo}"></span>${escHtml(txt)}</span>`;
+/* ── Filas de los sistemas para la lista de Cobros ──── */
+const nombreSistema = id => (state.cob?.sistemas.find(s => s.id === id) || {}).nombre || id;
 const plural = (n, uno, varios) => n + ' ' + (n === 1 ? uno : varios);
 
 function fechaCorta(f) {
@@ -80,64 +83,117 @@ function fechaCorta(f) {
   return new Date(y, m - 1, d).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-// Texto y color del estado de un cliente (gracia N = se corta N días después de vencer).
-function estadoDe(c) {
-  if (!c.activo) return badge('egreso', 'Pausado');
-  if (c.dias === null || c.dias === undefined) return badge('pendiente', 'Sin fecha');
-  if (c.bloqueado) return badge('egreso', c.dias === 0 ? 'Bloqueado · venció hoy' : `Bloqueado · venció hace ${plural(-c.dias, 'día', 'días')}`);
-  if (c.dias < 0) return badge('pendiente', `En gracia · se corta en ${plural(c.dias + c.gracia, 'día', 'días')}`);
-  if (c.dias === 0) return badge('pendiente', c.gracia ? 'Vence hoy' : 'Se corta hoy');
-  if (c.dias <= 7) return badge('pendiente', `Vence en ${plural(c.dias, 'día', 'días')}`);
-  return badge('pagada', 'Al día');
+// Cómo va un cliente de sistema (gracia N = se corta N días después de vencer).
+function estadoSaas(c) {
+  if (!c.activo) return ['overdue', 'Pausado'];
+  if (c.dias === null || c.dias === undefined) return ['pending', 'Sin fecha'];
+  if (c.bloqueado) return ['overdue', c.dias === 0 ? 'Bloqueado · venció hoy' : `Bloqueado · venció hace ${plural(-c.dias, 'día', 'días')}`];
+  if (c.dias < 0) return ['overdue', `En gracia · se corta en ${plural(c.dias + c.gracia, 'día', 'días')}`];
+  if (c.dias === 0) return ['pending', 'Vence hoy'];
+  if (c.dias <= 7) return ['pending', `Vence en ${plural(c.dias, 'día', 'días')}`];
+  return ['paid', 'Al día · hasta ' + fechaCorta(c.vence)];
 }
 
-function pintarFiltro() {
-  const sel = document.getElementById('cobFiltro');
-  const actual = sel.value;
-  sel.innerHTML = '<option value="">Todos los sistemas</option>' +
-    state.cob.sistemas.map(s => `<option value="${escHtml(s.id)}">${escHtml(s.nombre)}</option>`).join('');
-  sel.value = state.cob.sistemas.some(s => s.id === actual) ? actual : '';
-}
-
-/* ── Render principal (respeta el filtro por sistema) ─ */
-export function cobFiltrar() {
-  if (!state.cob) return;
-  const filtro = document.getElementById('cobFiltro').value;
-  const delFiltro = x => !filtro || x.sistema === filtro;
+// Clientes de los sistemas con la misma forma que una fila de "cobros":
+// name, category (= sistema), amountNum (lo que aporta al mes), date (día).
+export function saasRows() {
+  if (!state.cob) return [];
   const ocultos = new Set(state.cob.sistemas.filter(s => s.activo === 'no').map(s => s.id));
-  const clientes = state.cob.clientes
-    .map((c, i) => ({ ...c, _i: i }))
-    .filter(c => delFiltro(c) && (filtro || !ocultos.has(c.sistema)));
-
-  pintarKpis(clientes);
-  pintarReportes(state.cob.reportes.map((r, i) => ({ ...r, _i: i })).filter(r => r.estado === 'pendiente' && delFiltro(r)));
-  pintarCalendario(clientes);
-  pintarClientes(clientes);
-  pintarSistemas();
+  return state.cob.clientes
+    .map((c, i) => ({ c, i }))
+    .filter(({ c }) => !ocultos.has(c.sistema))
+    .map(({ c, i }) => {
+      const [status, label] = estadoSaas(c);
+      const anual = c.plan === 'anual';
+      return {
+        _saas: i,
+        name: c.nombre,
+        category: nombreSistema(c.sistema),
+        amountNum: anual ? Math.round((Number(c.valor) || 0) / 12) : Number(c.valor) || 0,
+        rawAmount: fmtAmount(Number(c.valor) || 0) + (anual ? ' /año' : ''),
+        date: c.vence ? String(Number(c.vence.slice(8))) : '',
+        chip: c.vence ? fechaCorta(c.vence).replace(/ de \d{4}$/, '') : '',
+        status, label,
+      };
+    });
 }
 
-function pintarKpis(clientes) {
-  const activos = clientes.filter(c => c.activo && c.vence);
-  const suma = arr => arr.reduce((t, c) => t + (Number(c.valor) || 0), 0);
-  const vencidos = activos.filter(c => c.dias < 0);
-  const semana = activos.filter(c => c.dias >= 0 && c.dias <= 7);
-  const mes = activos.filter(c => c.dias > 7 && c.dias <= 30);
-  const alDia = clientes.filter(c => c.activo && !c.bloqueado && (c.dias === null || c.dias >= 0));
-  const set = (id, v) => { document.getElementById(id).textContent = v; };
-  set('cobKpiVencido', fmtAmount(suma(vencidos)));
-  set('cobKpiVencidoN', plural(vencidos.length, 'cliente', 'clientes'));
-  set('cobKpiSemana', fmtAmount(suma(semana)));
-  set('cobKpiSemanaN', plural(semana.length, 'cliente', 'clientes'));
-  set('cobKpi30', fmtAmount(suma(mes)));
-  set('cobKpi30N', plural(mes.length, 'cliente', 'clientes'));
-  set('cobKpiAlDia', String(alDia.length));
-  set('cobKpiAlDiaN', 'de ' + plural(clientes.length, 'cliente', 'clientes'));
+export function saasRowHtml(r, i) {
+  const on = r.status === 'paid';
+  return `<tr data-status="${r.status}" style="animation-delay:${i * 35}ms">
+      <td class="td-name" data-label="Nombre">${escHtml(r.name)}</td>
+      <td data-label="Día">${saasChip(r)}</td>
+      <td class="td-amount" data-label="Monto">${escHtml(r.rawAmount)}</td>
+      <td data-label="Categoría"><span class="badge cat-sistema"><span class="dot dot-sistema"></span>${escHtml(r.category)}</span></td>
+      <td class="td-actions" data-label="Acciones">
+        <button class="btn-row check ${on ? 'on' : ''}" title="Registrar pago" onclick="cobAbrirPago(${r._saas})">✓</button>
+        ${buildRowMenu([{ onclick: `cobAbrirCliente(${r._saas})`, icon: ROW_MENU_ICONS.pencil, label: 'Editar' }])}
+      </td>
+    </tr>`;
 }
 
-function pintarReportes(pend) {
+function saasChip(r) {
+  if (!r.chip) return `<span class="day-chip ${r.status}" onclick="toggleDayLabel(event)">—<span class="day-tip">${escHtml(r.label)}</span></span>`;
+  return `<span class="day-chip ${r.status}" onclick="toggleDayLabel(event)">`
+    + `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">`
+    + `<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>`
+    + `<line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${escHtml(r.chip)}`
+    + `<span class="day-tip">${escHtml(r.label)}</span></span>`;
+}
+
+/* ── Pagos por confirmar + calendario (encima de la lista) ── */
+const filaVacia = (cols, txt) => `<tr class="state-row"><td colspan="${cols}">${escHtml(txt)}</td></tr>`;
+const chipCat = (txt, cls = 'cat-sistema', dot = 'dot-sistema') => `<span class="badge ${cls}"><span class="dot ${dot}"></span>${escHtml(txt)}</span>`;
+const badge = (st, txt) => {
+  const t = { paid: 'pagada', pending: 'pendiente', overdue: 'egreso' }[st];
+  return `<span class="badge badge-${t}"><span class="dot dot-${t}"></span>${escHtml(txt)}</span>`;
+};
+
+function hoyLocal() {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+// Cuándo le toca a una persona: el día X de este mes, o del próximo si ya pagó.
+function personaCal(r) {
+  const dia = parseInt(r.date, 10);
+  if (!dia) return null;
+  const hoy = hoyLocal();
+  const pago = r.paid === currentPeriod();
+  const mes = hoy.getMonth() + (pago ? 1 : 0);
+  const ultimo = new Date(hoy.getFullYear(), mes + 1, 0).getDate();
+  const vence = new Date(hoy.getFullYear(), mes, Math.min(dia, ultimo));
+  const dias = Math.round((vence - hoy) / 86400000);
+  const label = pago ? 'Al día' : dias < 0 ? `Atrasado · ${plural(-dias, 'día', 'días')}` : dias === 0 ? 'Le toca hoy' : `Le toca en ${plural(dias, 'día', 'días')}`;
+  return {
+    nombre: r.name, cat: r.category ? r.category.replace(/_/g, ' ') : 'Persona', saas: false,
+    valor: r.amountNum, dias, label, status: pago ? 'paid' : dias < 0 ? 'overdue' : 'pending',
+    fecha: vence.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }),
+    accion: pago ? '' : `<button class="btn-add" onclick="togglePaid('cobros',${r._row})">✓ Pagó</button>`,
+  };
+}
+
+function saasCal(c, i) {
+  if (!c.activo || !c.vence) return null;
+  const [status, label] = estadoSaas(c);
+  return {
+    nombre: c.nombre, cat: nombreSistema(c.sistema), saas: true,
+    valor: Number(c.valor) || 0, dias: c.dias, label, status, fecha: fechaCorta(c.vence).replace(/ de \d{4}$/, ''),
+    accion: `<button class="btn-add" onclick="cobAbrirPago(${i})">Registrar pago</button>`,
+  };
+}
+
+export function pintarCentral() {
+  pintarReportes();
+  pintarCalendario();
+  if (state.cob) pintarSistemas();
+}
+
+function pintarReportes() {
+  const pend = (state.cob?.reportes || []).map((r, i) => ({ ...r, _i: i })).filter(r => r.estado === 'pendiente');
+  document.getElementById('cobReportesPanel').hidden = !pend.length;
   document.getElementById('cobReportesN').textContent = pend.length;
-  document.getElementById('cobReportes').innerHTML = pend.length
-    ? pend.map(r => `
+  document.getElementById('cobReportes').innerHTML = pend.map(r => `
       <tr data-status="pending">
         <td class="td-name">${escHtml(r.nombre)}</td>
         <td class="td-actions">
@@ -145,54 +201,34 @@ function pintarReportes(pend) {
           <button class="btn-cancel cob-rechazar" onclick="cobResolver(${r._i}, false)">Rechazar</button>
         </td>
         <td class="td-amount">${fmtAmount(Number(r.monto) || 0)}</td>
-        <td>${chipSistema(r.sistema)}</td>
+        <td>${chipCat(nombreSistema(r.sistema))}</td>
         <td class="cob-muted">${escHtml(r.plan)} · ${escHtml(fechaCorta(r.fecha))}${r.nota ? ' · ' + escHtml(r.nota) : ''}</td>
         <td><a class="cob-link" href="${escHtml(r.comprobante)}" target="_blank" rel="noopener">Ver comprobante</a></td>
-      </tr>`).join('')
-    : filaVacia(6, 'No hay pagos por confirmar.');
+      </tr>`).join('');
 }
 
-function pintarCalendario(clientes) {
-  const activos = clientes.filter(c => c.activo && c.vence).sort((a, b) => a.dias - b.dias);
+function pintarCalendario() {
+  const items = [
+    ...state.allData.map(personaCal),
+    ...(state.cob ? state.cob.clientes.map(saasCal) : []),
+  ].filter(x => x && x.dias <= 30).sort((a, b) => a.dias - b.dias);
   const grupos = [
-    ['Vencidos', activos.filter(c => c.dias < 0)],
-    ['Esta semana', activos.filter(c => c.dias >= 0 && c.dias <= 7)],
-    ['Próximos 30 días', activos.filter(c => c.dias > 7 && c.dias <= 30)],
+    ['Vencidos', items.filter(x => x.dias < 0)],
+    ['Esta semana', items.filter(x => x.dias >= 0 && x.dias <= 7)],
+    ['Próximos 30 días', items.filter(x => x.dias > 7)],
   ];
   const html = grupos.filter(([, arr]) => arr.length).map(([titulo, arr]) => `
-    <tr class="cob-grupo"><td colspan="6"><span>${titulo}</span><span>${fmtAmount(arr.reduce((t, c) => t + (Number(c.valor) || 0), 0))}</span></td></tr>
-    ${arr.map(c => `
-      <tr data-status="${c.bloqueado ? 'overdue' : 'pending'}">
-        <td class="td-name">${escHtml(c.nombre)}</td>
-        <td>${chipSistema(c.sistema)}</td>
-        <td class="td-amount">${fmtAmount(Number(c.valor) || 0)}</td>
-        <td class="cob-muted">${escHtml(fechaCorta(c.vence))}</td>
-        <td>${estadoDe(c)}</td>
-        <td class="td-actions"><button class="btn-add" onclick="cobAbrirPago(${c._i})">Registrar pago</button></td>
+    <tr class="cob-grupo"><td colspan="6"><span>${titulo}</span><span>${fmtAmount(arr.reduce((t, x) => t + x.valor, 0))}</span></td></tr>
+    ${arr.map(x => `
+      <tr data-status="${x.status}">
+        <td class="td-name">${escHtml(x.nombre)}</td>
+        <td>${x.saas ? chipCat(x.cat) : chipCat(x.cat, 'cat-default', 'dot-default')}</td>
+        <td class="td-amount">${fmtAmount(x.valor)}</td>
+        <td class="cob-muted">${escHtml(x.fecha)}</td>
+        <td>${badge(x.status, x.label)}</td>
+        <td class="td-actions">${x.accion}</td>
       </tr>`).join('')}`).join('');
   document.getElementById('cobCalendario').innerHTML = html || filaVacia(6, 'Nadie vence en los próximos 30 días.');
-}
-
-function pintarClientes(clientes) {
-  const q = document.getElementById('cobBuscar').value.trim().toLowerCase();
-  const lista = clientes
-    .filter(c => !q || (c.nombre + ' ' + c.id + ' ' + c.contacto + ' ' + c.telefono).toLowerCase().includes(q))
-    .sort((a, b) => a.nombre.localeCompare(b.nombre));
-  document.getElementById('cobClientes').innerHTML = lista.length
-    ? lista.map(c => `
-      <tr data-status="${c.bloqueado ? 'overdue' : c.dias !== null && c.dias <= 7 ? 'pending' : 'paid'}">
-        <td class="td-name">${escHtml(c.nombre)} <span class="cob-muted">${escHtml(c.id)}</span></td>
-        <td>${chipSistema(c.sistema)}</td>
-        <td class="td-amount">${fmtAmount(Number(c.valor) || 0)} <span class="cob-muted">${c.plan === 'anual' ? '/ año' : '/ mes'}</span></td>
-        <td class="cob-muted">Hasta ${escHtml(fechaCorta(c.vence))}</td>
-        <td class="cob-muted">Gracia ${plural(c.gracia, 'día', 'días')}${c.gracia_dias === '' ? '' : ' (propia)'}</td>
-        <td>${estadoDe(c)}</td>
-        <td class="td-actions">
-          <button class="btn-add" onclick="cobAbrirPago(${c._i})">Pago</button>
-          <button class="btn-cancel" onclick="cobAbrirCliente(${c._i})">Editar</button>
-        </td>
-      </tr>`).join('')
-    : filaVacia(7, q ? 'Ningún cliente coincide.' : 'Aún no hay clientes.');
 }
 
 function pintarSistemas() {
@@ -201,13 +237,12 @@ function pintarSistemas() {
     ? s.map((x, i) => `
       <tr data-status="${x.activo === 'no' ? 'pending' : 'paid'}">
         <td class="td-name">${escHtml(x.nombre)}</td>
-        <td class="cob-muted">${escHtml(x.id)}</td>
         <td class="cob-muted">Gracia ${escHtml(x.gracia_dias)} días</td>
         <td class="cob-muted">${plural(state.cob.clientes.filter(c => c.sistema === x.id).length, 'cliente', 'clientes')}</td>
-        <td>${x.activo === 'no' ? badge('pendiente', 'Oculto') : badge('pagada', 'Activo')}</td>
+        <td>${x.activo === 'no' ? badge('pending', 'Oculto') : badge('paid', 'Activo')}</td>
         <td class="td-actions"><button class="btn-cancel" onclick="cobAbrirSistema(${i})">Editar</button></td>
       </tr>`).join('')
-    : filaVacia(6, 'Aún no hay sistemas.');
+    : filaVacia(5, 'Aún no hay sistemas.');
 }
 
 /* ── Modales ────────────────────────────────────────── */
@@ -239,16 +274,23 @@ async function guardar(btnId, accion, params, modal, okMsg) {
   }
 }
 
+export function cobAbrirSistemas() {
+  pintarSistemas();
+  abrir('cobSistemas');
+}
+
 let editCliente = null;
 export function cobAbrirCliente(i) {
+  if (!state.cob) return showNotification('Conecta tus sistemas primero', 'err');
+  if (!state.cob.sistemas.length) return showNotification('Crea primero un sistema', 'err');
   const c = state.cob.clientes[i] || null;
   editCliente = c;
   const sel = document.getElementById('ccSistema');
   sel.innerHTML = state.cob.sistemas.map(s => `<option value="${escHtml(s.id)}">${escHtml(s.nombre)}</option>`).join('');
-  sel.value = c ? c.sistema : (val('cobFiltro') || (state.cob.sistemas[0] || {}).id || '');
+  sel.value = c ? c.sistema : state.cob.sistemas[0].id;
   sel.disabled = !!c;
   document.getElementById('ccId').disabled = !!c;
-  document.getElementById('cobClienteTitulo').textContent = c ? 'Editar cliente' : 'Nuevo cliente';
+  document.getElementById('cobClienteTitulo').textContent = c ? 'Editar cliente' : 'Nuevo cliente de sistema';
   setVal('ccId', c?.id);
   setVal('ccNombre', c?.nombre);
   setVal('ccContacto', c?.contacto);

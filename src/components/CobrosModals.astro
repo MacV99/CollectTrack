@@ -110,6 +110,24 @@
   </div>
 </div>
 
+<!-- ── Lista de sistemas ── -->
+<div class="modal-backdrop" id="cobSistemasBackdrop" onclick="cobCerrar('cobSistemas')"></div>
+<div class="modal cob-modal-ancho" id="cobSistemasModal">
+  <div class="modal-header">
+    <span class="modal-title">Sistemas</span>
+    <button class="modal-close" onclick="cobCerrar('cobSistemas')">✕</button>
+  </div>
+  <div class="modal-body cob-modal-tabla">
+    <table>
+      <tbody id="cobSistemas"></tbody>
+    </table>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-cancel" onclick="cobCerrar('cobSistemas')">Cerrar</button>
+    <button class="btn-save" onclick="cobAbrirSistema(-1)">+ Nuevo sistema</button>
+  </div>
+</div>
+
 <!-- ── Registrar pago a mano ── -->
 <div class="modal-backdrop" id="cobPagoBackdrop" onclick="cobCerrar('cobPago')"></div>
 <div class="modal" id="cobPagoModal">

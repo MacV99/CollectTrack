@@ -10,6 +10,7 @@ import { setStatus } from '../ui/notify.js';
 import { state } from '../state.js';
 import { loadCache, saveCache } from '../lib/storage.js';
 import { renderSummary } from './summary.js';
+import { pintarCentral } from './cobros.js';
 
 /* ── LOAD ───────────────────────────────────────────── */
 export async function loadData() {
@@ -99,4 +100,5 @@ export function refreshAll() {
   applyExpFilters();
   updateKPIs();
   renderSummary();
+  pintarCentral();
 }

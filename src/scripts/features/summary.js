@@ -1,6 +1,7 @@
 /* summary.js — generado por refactor modular */
 import { catStyle, fmtAmount } from '../lib/format.js';
 import { state } from '../state.js';
+import { cobrosRows } from './collections.js';
 
 /* ── SUMMARY ────────────────────────────────────────── */
 function renderSumCards(map, targetId, metaFn) {
@@ -22,7 +23,7 @@ function renderSumCards(map, targetId, metaFn) {
 
 export function renderSummary() {
   const incMap = {};
-  state.allData.forEach(r => {
+  cobrosRows().forEach(r => {
     const key = r.category || 'Sin categoría';
     if (!incMap[key]) incMap[key] = { total: 0, count: 0, people: new Set() };
     incMap[key].total += r.amountNum;

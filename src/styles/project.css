@@ -1086,24 +1086,25 @@ html.role-socio .td-actions,
 html.role-socio #macia-sub-movimientos thead th:last-child { display: none; }
 
 /* ══════════════════════════════════════════════════════
-   COBROS · central de cobros (pestaña COBROS, solo admin)
+   COBROS · central de cobros dentro de MACV → Cobros
+   (clientes de los sistemas mezclados con tus personas)
    ══════════════════════════════════════════════════════ */
-.tab-btn[data-tab="cobros"] { color: #fbbf24; }
-.tab-btn[data-tab="cobros"].active { border-bottom-color: #fbbf24; }
-html.role-socio .tab-btn[data-tab="cobros"],
-html.role-socio #view-cobros { display: none !important; }
+/* Botones de sistemas: solo con la central conectada (clase en <html>). */
+html:not(.cob-on) .cob-solo { display: none; }
 
-.cob-login { max-width: 380px; }
-.cob-login-body { display: flex; flex-direction: column; gap: 12px; padding: 18px 22px 22px; }
+.cat-sistema { background: rgba(251,191,36,.13); color: #fbbf24; border: 1px solid rgba(251,191,36,.28); }
+.dot-sistema { background: #fbbf24; }
 
-.cob-barra {
-  align-items: center;
-  margin-bottom: 18px; padding: 0;
-  border-bottom: none;
+.cob-conectar {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+  padding: 12px 22px;
 }
-.cob-barra .filter-select { flex: 0 1 260px; }
+.cob-conectar[hidden] { display: none; }
+.cob-conectar .form-control { flex: 0 1 200px; padding: 7px 12px; }
+.cob-conectar .auth-err:empty { display: none; }
 
-.cob-buscar { flex: 0 1 200px; min-width: 120px; padding: 6px 12px; }
+.cob-modal-ancho { width: min(620px, calc(100vw - 32px)); }
+.cob-modal-tabla { padding: 0; }
 
 .cob-muted { font-size: 12px; color: var(--text-muted); }
 .td-name .cob-muted { margin-left: 6px; font-weight: 400; font-size: 11px; }
@@ -1127,9 +1128,10 @@ html.role-socio #view-cobros { display: none !important; }
   border-top: 2px solid var(--border);
 }
 .cob-grupo td span + span { float: right; font-size: 12px; letter-spacing: normal; color: var(--text); }
-#view-cobros td.cob-muted,
-#view-cobros .btn-add,
+#macv-sub-cobros td.cob-muted,
+#macv-sub-cobros .btn-add,
 .cob-link { white-space: nowrap; }
+#cobReportes td.cob-muted { white-space: normal; }
 
 .cob-clave { display: flex; align-items: center; gap: 10px; }
 .cob-clave code {
@@ -1144,13 +1146,9 @@ html.role-socio #view-cobros { display: none !important; }
   tbody tr.cob-grupo { display: block; background: transparent; border: none; border-radius: 0; padding: 0; margin: 10px 0 2px; }
   tbody tr.cob-grupo::before { display: none; }
   .cob-grupo td { display: block; padding: 6px 2px; }
-  .cob-barra { flex-direction: row; padding: 0; }
-  .cob-barra .filter-select { flex: 1 1 auto; width: auto; }
-  #view-cobros td.cob-muted { white-space: normal; }
-  .panel-head-right .cob-buscar { width: 120px; }
-  #cobReportes td:nth-child(5),
-  #cobClientes td:nth-child(5),
-  #cobClientes td:nth-child(6) { flex: 1 1 100%; }
+  #macv-sub-cobros td.cob-muted { white-space: normal; }
+  .panel-head-right { flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+  #cobReportes td:nth-child(5) { flex: 1 1 100%; }
 }
 
 /* ══════════════════════════════════════════════════════

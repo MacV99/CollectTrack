@@ -34,7 +34,6 @@ import CobrosModals from '../components/CobrosModals.astro';
     <div class="tabs">
       <button class="tab-btn active" data-tab="macv" onclick="switchTab('macv')">MACV</button>
       <button class="tab-btn tab-macia" data-tab="macia" onclick="switchTab('macia')">MACIA</button>
-      <button class="tab-btn" data-tab="cobros" onclick="switchTab('cobros')">COBROS</button>
     </div>
 
     <!-- ── GRUPO: MACV ── -->
@@ -48,6 +47,7 @@ import CobrosModals from '../components/CobrosModals.astro';
       </div>
 
       <div class="macv-subview active" id="macv-sub-cobros">
+        <CobrosCentral />
         <CobrosPanel />
         <SummaryPanel gridId="summaryGrid" />
       </div>
@@ -68,11 +68,6 @@ import CobrosModals from '../components/CobrosModals.astro';
       <MaciaKpis />
 
       <MaciaMovimientos />
-    </div>
-
-    <!-- ── GRUPO: COBROS (central de cobros de los sistemas) ── -->
-    <div class="panel-view" id="view-cobros">
-      <CobrosCentral />
     </div>
   </main>
 

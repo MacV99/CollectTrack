@@ -1,124 +1,42 @@
-<!-- Central de cobros: mensualidades de todos los sistemas (SaaS).
+<!-- Central de cobros dentro de MACV → Cobros: conectar sistemas, pagos por
+     confirmar y calendario de cobros de todos (personas + sistemas).
      Lógica en src/scripts/features/cobros.js. Estilos en project.css (.cob-*). -->
 
-<!-- Clave del panel (se pide una vez y queda guardada en este equipo) -->
-<div class="panel cob-login" id="cobLogin" hidden>
-  <div class="panel-head"><span class="panel-title">Central de cobros</span></div>
-  <div class="cob-login-body">
-    <p class="cob-muted">Escribe la clave del panel de cobros.</p>
-    <input class="form-control" id="cobClave" type="password" autocomplete="off" placeholder="Clave" onkeydown="if(event.key==='Enter')cobEntrar()" />
-    <button class="btn-save" onclick="cobEntrar()">Entrar</button>
-    <div class="auth-err" id="cobLoginErr"></div>
+<!-- Clave del panel de cobros (se pide una vez y queda guardada en este equipo) -->
+<div class="panel cob-conectar" id="cobConectar" hidden>
+  <span class="cob-muted">Conecta tus sistemas (MesaDirecta…) con la clave del panel de cobros.</span>
+  <input class="form-control" id="cobClave" type="password" autocomplete="off" placeholder="Clave" onkeydown="if(event.key==='Enter')cobEntrar()" />
+  <button class="btn-add" onclick="cobEntrar()">Conectar</button>
+  <span class="auth-err" id="cobLoginErr"></span>
+</div>
+
+<div class="panel" id="cobReportesPanel" hidden>
+  <div class="panel-head">
+    <span class="panel-title">Pagos por confirmar</span>
+    <span class="row-count"><b id="cobReportesN">0</b> pendientes</span>
+  </div>
+  <div class="table-scroll">
+    <table>
+      <tbody id="cobReportes"></tbody>
+    </table>
   </div>
 </div>
 
-<div id="cobContenido" hidden>
-  <div class="filters cob-barra">
-    <select class="filter-select" id="cobFiltro" onchange="cobFiltrar()">
-      <option value="">Todos los sistemas</option>
-    </select>
-    <button class="btn-add" onclick="cobCargar()">Actualizar</button>
-  </div>
-
-  <div class="kpi-grid">
-    <div class="kpi danger">
-      <div class="kpi-label">Vencido sin pagar</div>
-      <div class="kpi-val" id="cobKpiVencido">$0</div>
-      <div class="kpi-sub" id="cobKpiVencidoN">0 clientes</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-label">Esta semana</div>
-      <div class="kpi-val" id="cobKpiSemana">$0</div>
-      <div class="kpi-sub" id="cobKpiSemanaN">0 clientes</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-label">Próximos 30 días</div>
-      <div class="kpi-val" id="cobKpi30">$0</div>
-      <div class="kpi-sub" id="cobKpi30N">0 clientes</div>
-    </div>
-    <div class="kpi accent">
-      <div class="kpi-label">Al día</div>
-      <div class="kpi-val" id="cobKpiAlDia">0</div>
-      <div class="kpi-sub" id="cobKpiAlDiaN">de 0 clientes</div>
-    </div>
-  </div>
-
-  <div class="panel">
-    <div class="panel-head">
-      <span class="panel-title">Pagos por confirmar</span>
-      <span class="row-count"><b id="cobReportesN">0</b> pendientes</span>
-    </div>
-    <div class="table-scroll">
-      <table>
-        <tbody id="cobReportes"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="panel">
-    <div class="panel-head"><span class="panel-title">Calendario de cobros</span></div>
-    <div class="table-scroll">
-      <table>
-        <thead>
-          <tr>
-            <th class="no-sort">Cliente</th>
-            <th class="no-sort">Sistema</th>
-            <th class="no-sort">Valor</th>
-            <th class="no-sort">Vence</th>
-            <th class="no-sort">Estado</th>
-            <th class="no-sort"></th>
-          </tr>
-        </thead>
-        <tbody id="cobCalendario"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="panel">
-    <div class="panel-head">
-      <span class="panel-title">Clientes</span>
-      <div class="panel-head-right">
-        <input class="filter-input cob-buscar" id="cobBuscar" type="text" placeholder="Buscar…" oninput="cobFiltrar()" />
-        <button class="btn-add" onclick="cobAbrirCliente(-1)">+ Nuevo</button>
-      </div>
-    </div>
-    <div class="table-scroll">
-      <table>
-        <thead>
-          <tr>
-            <th class="no-sort">Cliente</th>
-            <th class="no-sort">Sistema</th>
-            <th class="no-sort">Valor</th>
-            <th class="no-sort">Pagado hasta</th>
-            <th class="no-sort">Gracia</th>
-            <th class="no-sort">Estado</th>
-            <th class="no-sort"></th>
-          </tr>
-        </thead>
-        <tbody id="cobClientes"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="panel">
-    <div class="panel-head">
-      <span class="panel-title">Sistemas</span>
-      <button class="btn-add" onclick="cobAbrirSistema(-1)">+ Nuevo</button>
-    </div>
-    <div class="table-scroll">
-      <table>
-        <thead>
-          <tr>
-            <th class="no-sort">Sistema</th>
-            <th class="no-sort">Código</th>
-            <th class="no-sort">Gracia</th>
-            <th class="no-sort">Clientes</th>
-            <th class="no-sort">Estado</th>
-            <th class="no-sort"></th>
-          </tr>
-        </thead>
-        <tbody id="cobSistemas"></tbody>
-      </table>
-    </div>
+<div class="panel">
+  <div class="panel-head"><span class="panel-title">Calendario de cobros</span></div>
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th class="no-sort">Nombre</th>
+          <th class="no-sort">Categoría</th>
+          <th class="no-sort">Valor</th>
+          <th class="no-sort">Le toca</th>
+          <th class="no-sort">Estado</th>
+          <th class="no-sort"></th>
+        </tr>
+      </thead>
+      <tbody id="cobCalendario"></tbody>
+    </table>
   </div>
 </div>

@@ -2,6 +2,14 @@
 import { catStyle, fmtAmount, normPeriod, parseAmount, escHtml } from '../lib/format.js';
 import { dayChip, payCheckBtn, payStatus, rowMenu } from '../ui/menus.js';
 import { state } from '../state.js';
+import { saasRowHtml, saasRows } from './cobros.js';
+
+// Lista de Cobros = tus personas (hoja "cobros") + clientes de los sistemas
+// (central de cobros). Las de sistemas traen _saas y su propio status.
+export function cobrosRows() {
+  return [...state.allData, ...saasRows()];
+}
+const statusOf = r => (r._saas != null ? r.status : payStatus(r));
 
 export function mapIncomeRow(r) {
   const amt = parseAmount(r['AMOUNT']);
@@ -23,8 +31,9 @@ const mobileQuery = window.matchMedia('(max-width: 640px)');
 
 /* ── INCOME FILTERS ─────────────────────────────────── */
 export function populateFilters() {
-  const cats  = [...new Set(state.allData.map(r => r.category).filter(Boolean))].sort();
-  const dates = [...new Set(state.allData.map(r => r.date).filter(Boolean))].sort((a, b) => +a - +b);
+  const rows  = cobrosRows();
+  const cats  = [...new Set(rows.map(r => r.category).filter(Boolean))].sort();
+  const dates = [...new Set(rows.map(r => r.date).filter(Boolean))].sort((a, b) => +a - +b);
 
   document.getElementById('filterCategory').innerHTML =
     '<option value="">Todas las categorías</option>' +
@@ -41,11 +50,11 @@ export function applyFilters() {
   const date   = document.getElementById('filterDate').value;
   const status = document.getElementById('filterStatus').value;
 
-  state.filteredData = state.allData.filter(r => {
+  state.filteredData = cobrosRows().filter(r => {
     if (search && !r.name.toLowerCase().includes(search)) return false;
     if (cat  && r.category !== cat)  return false;
     if (date && r.date !== date)     return false;
-    if (status && payStatus(r) !== status) return false;
+    if (status && statusOf(r) !== status) return false;
     return true;
   });
 
@@ -56,8 +65,11 @@ export function applyFilters() {
   } else {
     // Por defecto (sin columna elegida): último movimiento agregado primero.
     // state.allData/state.allExpenses están en orden de hoja (antiguos→nuevos, los nuevos
-    // se agregan al final), así que invertir deja lo más reciente arriba.
-    state.filteredData.reverse();
+    // se agregan al final), así que invertir deja lo más reciente arriba. Los
+    // clientes de sistemas van después, del que vence primero al último.
+    const saas = state.filteredData.filter(r => r._saas != null)
+      .sort((a, b) => (state.cob.clientes[a._saas].dias ?? 9999) - (state.cob.clientes[b._saas].dias ?? 9999));
+    state.filteredData = state.filteredData.filter(r => r._saas == null).reverse().concat(saas);
   }
   renderTable();
 }
@@ -97,7 +109,7 @@ export function sortFiltered() {
 /* ── INCOME RENDER ──────────────────────────────────── */
 export function renderTable() {
   document.getElementById('visibleCount').textContent = state.filteredData.length;
-  document.getElementById('totalCount').textContent   = state.allData.length;
+  document.getElementById('totalCount').textContent   = cobrosRows().length;
 
   const tbody = document.getElementById('tableBody');
 
@@ -107,6 +119,7 @@ export function renderTable() {
   }
 
   tbody.innerHTML = state.filteredData.map((r, i) => {
+    if (r._saas != null) return saasRowHtml(r, i);
     const s        = catStyle(r.category);
     const catLabel = r.category ? r.category.replace(/_/g, ' ') : null;
     const catCell  = catLabel
@@ -129,10 +142,11 @@ export function renderTable() {
 
 /* ── KPI CARDS ──────────────────────────────────────── */
 export function updateKPIs() {
-  const totalIncome   = state.allData.reduce((s, r) => s + r.amountNum, 0);
+  const rows          = cobrosRows();
+  const totalIncome   = rows.reduce((s, r) => s + r.amountNum, 0);
   const totalExpenses = state.allExpenses.reduce((s, r) => s + r.amountNum, 0);
   const balance = totalIncome - totalExpenses;
-  const people  = new Set(state.allData.map(r => r.name.trim().toLowerCase())).size;
+  const people  = new Set(rows.map(r => r.name.trim().toLowerCase())).size;
 
   document.getElementById('kpiBalance').textContent  = (balance < 0 ? '-' : '') + fmtAmount(Math.abs(balance));
   document.getElementById('kpiTotal').textContent    = fmtAmount(totalIncome);

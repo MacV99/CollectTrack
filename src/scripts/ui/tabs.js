@@ -1,11 +1,9 @@
 /* tabs.js — generado por refactor modular */
-import { cobAbrir } from '../features/cobros.js';
 
 /* ── TABS ───────────────────────────────────────────── */
-// Grupos de nivel superior: MACV (cobros/pagos) · MACIA (movimientos) ·
-// COBROS (central de cobros de los sistemas, solo admin).
+// Grupos de nivel superior: MACV (cobros/pagos) · MACIA (movimientos).
 export function switchTab(tab) {
-  if (tab === 'cobros' && document.documentElement.classList.contains('role-socio')) tab = 'macia';
+  if (tab !== 'macv' && tab !== 'macia') tab = 'macv';
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tab === tab);
   });
@@ -13,8 +11,6 @@ export function switchTab(tab) {
   // alternar la vista activa (estructura idéntica a la de MACIA).
   document.getElementById('view-macv').classList.toggle('active',  tab === 'macv');
   document.getElementById('view-macia').classList.toggle('active', tab === 'macia');
-  document.getElementById('view-cobros').classList.toggle('active', tab === 'cobros');
-  if (tab === 'cobros') cobAbrir();
   try { localStorage.setItem('ct_active_tab', tab); } catch {}
 }
 
