@@ -1,7 +1,8 @@
 /* cobros.js — Central de cobros: mensualidades de todos los sistemas (SaaS).
    Vive dentro de MACV → Cobros: los clientes de los sistemas se mezclan con
-   tus personas en la misma lista (ver collections.js → cobrosRows) y aquí se
-   pintan "Pagos por confirmar" y el "Calendario de cobros" de todos.
+   tus personas en la misma lista (ver collections.js → cobrosRows; sus plazos
+   vencidos / esta semana / 30 días son opciones del filtro de estado) y aquí
+   se pintan "Pagos por confirmar" y los modales.
    Habla con la sección "CENTRAL DE COBROS" de GAS_SCRIPT.js por JSONP.
    La clave del panel se pide una vez y queda en localStorage (COB_KEY).
    Las filas llaman a sus handlers por índice (state.cob.clientes[i]) para no
@@ -149,43 +150,30 @@ const badge = (st, txt) => {
   return `<span class="badge badge-${t}"><span class="dot dot-${t}"></span>${escHtml(txt)}</span>`;
 };
 
-function hoyLocal() {
-  const d = new Date();
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-}
-
-// Cuándo le toca a una persona: el día X de este mes, o del próximo si ya pagó.
-function personaCal(r) {
+// Días que faltan para que le toque (negativo = vencido). Personas: el día X
+// de este mes, o del próximo si ya pagó. Sistemas: su fecha de vencimiento.
+// null = sin fecha o pausado (no entra en los plazos).
+export function diasDe(r) {
+  if (r._saas != null) {
+    const c = state.cob.clientes[r._saas];
+    return c.activo && c.vence ? c.dias : null;
+  }
   const dia = parseInt(r.date, 10);
   if (!dia) return null;
-  const hoy = hoyLocal();
-  const pago = r.paid === currentPeriod();
-  const mes = hoy.getMonth() + (pago ? 1 : 0);
+  const d = new Date();
+  const hoy = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const mes = hoy.getMonth() + (r.paid === currentPeriod() ? 1 : 0);
   const ultimo = new Date(hoy.getFullYear(), mes + 1, 0).getDate();
-  const vence = new Date(hoy.getFullYear(), mes, Math.min(dia, ultimo));
-  const dias = Math.round((vence - hoy) / 86400000);
-  const label = pago ? 'Al día' : dias < 0 ? `Atrasado · ${plural(-dias, 'día', 'días')}` : dias === 0 ? 'Le toca hoy' : `Le toca en ${plural(dias, 'día', 'días')}`;
-  return {
-    nombre: r.name, cat: r.category ? r.category.replace(/_/g, ' ') : 'Persona', saas: false,
-    valor: r.amountNum, dias, label, status: pago ? 'paid' : dias < 0 ? 'overdue' : 'pending',
-    fecha: vence.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }),
-    accion: pago ? '' : `<button class="btn-add" onclick="togglePaid('cobros',${r._row})">✓ Pagó</button>`,
-  };
+  return Math.round((new Date(hoy.getFullYear(), mes, Math.min(dia, ultimo)) - hoy) / 86400000);
 }
 
-function saasCal(c, i) {
-  if (!c.activo || !c.vence) return null;
-  const [status, label] = estadoSaas(c);
-  return {
-    nombre: c.nombre, cat: nombreSistema(c.sistema), saas: true,
-    valor: Number(c.valor) || 0, dias: c.dias, label, status, fecha: fechaCorta(c.vence).replace(/ de \d{4}$/, ''),
-    accion: `<button class="btn-add" onclick="cobAbrirPago(${i})">Registrar pago</button>`,
-  };
+// Lo que se cobra en ese vencimiento (un plan anual cobra el año completo).
+export function valorCobro(r) {
+  return r._saas != null ? Number(state.cob.clientes[r._saas].valor) || 0 : r.amountNum;
 }
 
 export function pintarCentral() {
   pintarReportes();
-  pintarCalendario();
   if (state.cob) pintarSistemas();
 }
 
@@ -205,30 +193,6 @@ function pintarReportes() {
         <td class="cob-muted">${escHtml(r.plan)} · ${escHtml(fechaCorta(r.fecha))}${r.nota ? ' · ' + escHtml(r.nota) : ''}</td>
         <td><a class="cob-link" href="${escHtml(r.comprobante)}" target="_blank" rel="noopener">Ver comprobante</a></td>
       </tr>`).join('');
-}
-
-function pintarCalendario() {
-  const items = [
-    ...state.allData.map(personaCal),
-    ...(state.cob ? state.cob.clientes.map(saasCal) : []),
-  ].filter(x => x && x.dias <= 30).sort((a, b) => a.dias - b.dias);
-  const grupos = [
-    ['Vencidos', items.filter(x => x.dias < 0)],
-    ['Esta semana', items.filter(x => x.dias >= 0 && x.dias <= 7)],
-    ['Próximos 30 días', items.filter(x => x.dias > 7)],
-  ];
-  const html = grupos.filter(([, arr]) => arr.length).map(([titulo, arr]) => `
-    <tr class="cob-grupo"><td colspan="6"><span>${titulo}</span><span>${fmtAmount(arr.reduce((t, x) => t + x.valor, 0))}</span></td></tr>
-    ${arr.map(x => `
-      <tr data-status="${x.status}">
-        <td class="td-name">${escHtml(x.nombre)}</td>
-        <td>${x.saas ? chipCat(x.cat) : chipCat(x.cat, 'cat-default', 'dot-default')}</td>
-        <td class="td-amount">${fmtAmount(x.valor)}</td>
-        <td class="cob-muted">${escHtml(x.fecha)}</td>
-        <td>${badge(x.status, x.label)}</td>
-        <td class="td-actions">${x.accion}</td>
-      </tr>`).join('')}`).join('');
-  document.getElementById('cobCalendario').innerHTML = html || filaVacia(6, 'Nadie vence en los próximos 30 días.');
 }
 
 function pintarSistemas() {

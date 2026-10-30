@@ -2,7 +2,7 @@
 import { catStyle, fmtAmount, normPeriod, parseAmount, escHtml } from '../lib/format.js';
 import { dayChip, payCheckBtn, payStatus, rowMenu } from '../ui/menus.js';
 import { state } from '../state.js';
-import { saasRowHtml, saasRows } from './cobros.js';
+import { diasDe, saasRowHtml, saasRows, valorCobro } from './cobros.js';
 
 // Lista de Cobros = tus personas (hoja "cobros") + clientes de los sistemas
 // (central de cobros). Las de sistemas traen _saas y su propio status.
@@ -10,6 +10,13 @@ export function cobrosRows() {
   return [...state.allData, ...saasRows()];
 }
 const statusOf = r => (r._saas != null ? r.status : payStatus(r));
+
+// Plazos del filtro de estado: [desde, hasta] en días que faltan para cobrar.
+const PLAZOS = { vencidos: [-Infinity, -1], semana: [0, 7], mes: [8, 30] };
+function enPlazo(r, plazo) {
+  const d = diasDe(r);
+  return d !== null && d >= plazo[0] && d <= plazo[1];
+}
 
 export function mapIncomeRow(r) {
   const amt = parseAmount(r['AMOUNT']);
@@ -54,7 +61,7 @@ export function applyFilters() {
     if (search && !r.name.toLowerCase().includes(search)) return false;
     if (cat  && r.category !== cat)  return false;
     if (date && r.date !== date)     return false;
-    if (status && statusOf(r) !== status) return false;
+    if (status && PLAZOS[status] ? !enPlazo(r, PLAZOS[status]) : status && statusOf(r) !== status) return false;
     return true;
   });
 
@@ -110,6 +117,10 @@ export function sortFiltered() {
 export function renderTable() {
   document.getElementById('visibleCount').textContent = state.filteredData.length;
   document.getElementById('totalCount').textContent   = cobrosRows().length;
+  const plazo = PLAZOS[document.getElementById('filterStatus').value];
+  document.getElementById('filterTotal').textContent = plazo
+    ? ' · ' + fmtAmount(state.filteredData.reduce((t, r) => t + valorCobro(r), 0))
+    : '';
 
   const tbody = document.getElementById('tableBody');
 

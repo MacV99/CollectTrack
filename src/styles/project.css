@@ -187,6 +187,7 @@ main { max-width: 1160px; margin: 0 auto; padding: 36px 32px; }
 
 .row-count { font-size: 11px; color: var(--text-muted); }
 .row-count b { color: var(--accent); font-weight: 500; }
+#filterTotal { color: var(--text); font-weight: 600; }
 
 /* ── BTN ADD ────────────────────────────────── */
 .btn-add {
@@ -868,10 +869,10 @@ tbody td { padding: 15px 22px; font-size: 12px; vertical-align: middle; }
   .filters { flex-direction: column; gap: 8px; padding: 12px 14px; }
   .filter-input, .filter-select { min-width: unset; width: 100%; flex: none; }
 
-  /* Cobros (MACV): en mobile solo queda el buscador por nombre — los
-     selects de categoría/día/estado se ocultan (el orden ya es fijo por
-     día y la lista suele ser corta, no hace falta filtrar más). */
-  #filterCategory, #filterDate, #filterStatus { display: none; }
+  /* Cobros (MACV): en mobile quedan el buscador y el estado (que trae los
+     plazos vencidos / esta semana / 30 días con su total); categoría y día
+     se ocultan (el orden ya es fijo por día). */
+  #filterCategory, #filterDate { display: none; }
 
   /* Pagos (MACV): mismo criterio, sin buscador propio (no tiene nombre). */
   #filterExpCategory, #filterExpDate, #filterExpStatus { display: none; }
@@ -1120,14 +1121,6 @@ html:not(.cob-on) .cob-solo { display: none; }
   .cob-rechazar:hover { border-color: var(--danger); color: var(--danger); }
 }
 
-/* Separador de grupo del calendario (Vencidos / Esta semana / 30 días) */
-.cob-grupo td {
-  padding: 14px 22px 6px;
-  font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
-  color: var(--text-muted);
-  border-top: 2px solid var(--border);
-}
-.cob-grupo td span + span { float: right; font-size: 12px; letter-spacing: normal; color: var(--text); }
 #macv-sub-cobros td.cob-muted,
 #macv-sub-cobros .btn-add,
 .cob-link { white-space: nowrap; }
@@ -1143,9 +1136,6 @@ html:not(.cob-on) .cob-solo { display: none; }
 .cob-check { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); }
 
 @media (max-width: 640px) {
-  tbody tr.cob-grupo { display: block; background: transparent; border: none; border-radius: 0; padding: 0; margin: 10px 0 2px; }
-  tbody tr.cob-grupo::before { display: none; }
-  .cob-grupo td { display: block; padding: 6px 2px; }
   #macv-sub-cobros td.cob-muted { white-space: normal; }
   .panel-head-right { flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
   #cobReportes td:nth-child(5) { flex: 1 1 100%; }

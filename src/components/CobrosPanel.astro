@@ -3,7 +3,7 @@
           <span class="panel-title">Cobros</span>
           <div class="panel-head-right">
             <span class="row-count">
-              mostrando <b id="visibleCount">0</b> de <b id="totalCount">0</b>
+              mostrando <b id="visibleCount">0</b> de <b id="totalCount">0</b><span id="filterTotal"></span>
             </span>
             <button class="btn-add" onclick="openCreateModal('cobros')">
               <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor"
@@ -31,6 +31,9 @@
             <option value="paid">Al día</option>
             <option value="pending">Pendientes</option>
             <option value="overdue">Atrasados</option>
+            <option value="vencidos">Vencidos (con total)</option>
+            <option value="semana">Esta semana (con total)</option>
+            <option value="mes">Próximos 30 días (con total)</option>
           </select>
         </div>
 

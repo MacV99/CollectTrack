@@ -1,5 +1,5 @@
-<!-- Central de cobros dentro de MACV → Cobros: conectar sistemas, pagos por
-     confirmar y calendario de cobros de todos (personas + sistemas).
+<!-- Central de cobros dentro de MACV → Cobros: conectar sistemas y pagos por
+     confirmar (la lista y sus plazos están en CobrosPanel).
      Lógica en src/scripts/features/cobros.js. Estilos en project.css (.cob-*). -->
 
 <!-- Clave del panel de cobros (se pide una vez y queda guardada en este equipo) -->
@@ -18,25 +18,6 @@
   <div class="table-scroll">
     <table>
       <tbody id="cobReportes"></tbody>
-    </table>
-  </div>
-</div>
-
-<div class="panel">
-  <div class="panel-head"><span class="panel-title">Calendario de cobros</span></div>
-  <div class="table-scroll">
-    <table>
-      <thead>
-        <tr>
-          <th class="no-sort">Nombre</th>
-          <th class="no-sort">Categoría</th>
-          <th class="no-sort">Valor</th>
-          <th class="no-sort">Le toca</th>
-          <th class="no-sort">Estado</th>
-          <th class="no-sort"></th>
-        </tr>
-      </thead>
-      <tbody id="cobCalendario"></tbody>
     </table>
   </div>
 </div>
