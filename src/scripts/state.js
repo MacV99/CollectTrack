@@ -37,6 +37,10 @@ export const state = {
   maciaSortCol: 'date',
   maciaSortDir: 'desc',
 
+  // ── COBROS · central de cobros (null = aún no cargada) ──
+  // { hoy, sistemas, clientes, reportes } tal cual los devuelve cobListar.
+  cob: null,
+
   // ── MACV · Deudas (préstamos ocasionales, solo local) ──
   debts: [],
   debtsFiltered: [],

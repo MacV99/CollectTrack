@@ -16,6 +16,8 @@ import BalanceModal from '../components/BalanceModal.astro';
 import DeudaModal from '../components/DeudaModal.astro';
 import ConfirmModal from '../components/ConfirmModal.astro';
 import AuthGate from '../components/AuthGate.astro';
+import CobrosCentral from '../components/CobrosCentral.astro';
+import CobrosModals from '../components/CobrosModals.astro';
 ---
 
 <Layout>
@@ -32,6 +34,7 @@ import AuthGate from '../components/AuthGate.astro';
     <div class="tabs">
       <button class="tab-btn active" data-tab="macv" onclick="switchTab('macv')">MACV</button>
       <button class="tab-btn tab-macia" data-tab="macia" onclick="switchTab('macia')">MACIA</button>
+      <button class="tab-btn" data-tab="cobros" onclick="switchTab('cobros')">COBROS</button>
     </div>
 
     <!-- ── GRUPO: MACV ── -->
@@ -66,6 +69,11 @@ import AuthGate from '../components/AuthGate.astro';
 
       <MaciaMovimientos />
     </div>
+
+    <!-- ── GRUPO: COBROS (central de cobros de los sistemas) ── -->
+    <div class="panel-view" id="view-cobros">
+      <CobrosCentral />
+    </div>
   </main>
 
   <MacvModal />
@@ -74,6 +82,7 @@ import AuthGate from '../components/AuthGate.astro';
   <BalanceModal />
   <DeudaModal />
   <ConfirmModal />
+  <CobrosModals />
 
   <script>
     import '../scripts/main.js';

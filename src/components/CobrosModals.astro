@@ -1,0 +1,152 @@
+<!-- Modales de la central de cobros: cliente, sistema y registrar pago. -->
+
+<!-- ── Cliente ── -->
+<div class="modal-backdrop" id="cobClienteBackdrop" onclick="cobCerrar('cobCliente')"></div>
+<div class="modal" id="cobClienteModal">
+  <div class="modal-header">
+    <span class="modal-title" id="cobClienteTitulo">Nuevo cliente</span>
+    <button class="modal-close" onclick="cobCerrar('cobCliente')">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="form-grid-2">
+      <div class="form-group">
+        <label class="form-label">Sistema</label>
+        <select class="form-control" id="ccSistema"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Código en el sistema</label>
+        <input class="form-control" id="ccId" type="text" autocomplete="off" placeholder="ej: elfogon" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nombre</label>
+      <input class="form-control" id="ccNombre" type="text" autocomplete="off" />
+    </div>
+    <div class="form-grid-2">
+      <div class="form-group">
+        <label class="form-label">Contacto</label>
+        <input class="form-control" id="ccContacto" type="text" autocomplete="off" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Teléfono</label>
+        <input class="form-control" id="ccTelefono" type="tel" autocomplete="off" />
+      </div>
+    </div>
+    <div class="form-grid-2">
+      <div class="form-group">
+        <label class="form-label">Plan</label>
+        <select class="form-control" id="ccPlan">
+          <option value="mensual">Mensual · $70.000</option>
+          <option value="anual">Anual · $600.000</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Precio propio</label>
+        <input class="form-control" id="ccPrecio" type="text" inputmode="numeric" placeholder="vacío = el del plan" oninput="fmtAmountInput(this)" />
+      </div>
+    </div>
+    <div class="form-grid-2">
+      <div class="form-group">
+        <label class="form-label">Pagado hasta</label>
+        <input class="form-control" id="ccHasta" type="date" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Días de gracia</label>
+        <input class="form-control" id="ccGracia" type="number" min="0" inputmode="numeric" placeholder="vacío = los del sistema" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Estado</label>
+      <select class="form-control" id="ccEstado">
+        <option value="activo">Activo</option>
+        <option value="pausado">Pausado (bloqueado)</option>
+      </select>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-cancel" onclick="cobCerrar('cobCliente')">Cancelar</button>
+    <button class="btn-save" id="ccGuardar" onclick="cobGuardarCliente()">Guardar</button>
+  </div>
+</div>
+
+<!-- ── Sistema ── -->
+<div class="modal-backdrop" id="cobSistemaBackdrop" onclick="cobCerrar('cobSistema')"></div>
+<div class="modal" id="cobSistemaModal">
+  <div class="modal-header">
+    <span class="modal-title" id="cobSistemaTitulo">Nuevo sistema</span>
+    <button class="modal-close" onclick="cobCerrar('cobSistema')">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="form-group">
+      <label class="form-label">Nombre</label>
+      <input class="form-control" id="csNombre" type="text" autocomplete="off" placeholder="ej: MesaDirecta" />
+    </div>
+    <div class="form-grid-2">
+      <div class="form-group">
+        <label class="form-label">Días de gracia</label>
+        <input class="form-control" id="csGracia" type="number" min="0" inputmode="numeric" placeholder="7" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Estado</label>
+        <select class="form-control" id="csActivo">
+          <option value="si">Activo</option>
+          <option value="no">Oculto</option>
+        </select>
+      </div>
+    </div>
+    <p class="cob-muted">0 = se corta el mismo día que vence · 7 = tiene 7 días para pagar.</p>
+    <div class="form-group" id="csClaveGrupo">
+      <label class="form-label">Clave del sistema</label>
+      <div class="cob-clave">
+        <code id="csClave"></code>
+        <button type="button" class="btn-cancel" onclick="cobCopiarClave()">Copiar</button>
+      </div>
+      <label class="cob-check"><input type="checkbox" id="csNuevaClave" /> Cambiar por una clave nueva</label>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-cancel" onclick="cobCerrar('cobSistema')">Cancelar</button>
+    <button class="btn-save" id="csGuardar" onclick="cobGuardarSistema()">Guardar</button>
+  </div>
+</div>
+
+<!-- ── Registrar pago a mano ── -->
+<div class="modal-backdrop" id="cobPagoBackdrop" onclick="cobCerrar('cobPago')"></div>
+<div class="modal" id="cobPagoModal">
+  <div class="modal-header">
+    <span class="modal-title" id="cobPagoTitulo">Registrar pago</span>
+    <button class="modal-close" onclick="cobCerrar('cobPago')">✕</button>
+  </div>
+  <div class="modal-body">
+    <p class="cob-muted" id="cobPagoInfo"></p>
+    <div class="form-grid-2">
+      <div class="form-group">
+        <label class="form-label">Plan</label>
+        <select class="form-control" id="cpPlan">
+          <option value="mensual">Mensual (1 mes)</option>
+          <option value="anual">Anual (12 meses)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Valor recibido</label>
+        <input class="form-control" id="cpMonto" type="text" inputmode="numeric" oninput="fmtAmountInput(this)" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nota</label>
+      <input class="form-control" id="cpNota" type="text" maxlength="200" placeholder="ej: efectivo" />
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-cancel" onclick="cobCerrar('cobPago')">Cancelar</button>
+    <button class="btn-save" id="cpGuardar" onclick="cobGuardarPago()">Registrar</button>
+  </div>
+</div>
+
+<style>
+  .form-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+</style>

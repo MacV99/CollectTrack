@@ -19,6 +19,9 @@
 //   macia:       ID | DATE | CONCEPT | AMOUNT | TYPE | ACCOUNT | OBSERVATIONS | CREATED_AT
 //   deudas:      ID | PERSON | DATE | AMOUNT | TYPE | NOTE | STATUS | CREATED_AT
 //   macia_audit: ID | ACTION | DETAIL | TIMESTAMP
+//
+// CENTRAL DE COBROS (pestañas que se crean solas, ver instalarCobros):
+//   sistemas · clientes · cobros_pagos · cobros_reportes
 // ─────────────────────────────────────────────────────────────────────────────
 
 const SS = SpreadsheetApp.getActiveSpreadsheet();
@@ -40,9 +43,14 @@ function doGet(e) {
   const cb     = e.parameter.callback;
   const action = e.parameter.action;
 
+  // Aprobar desde el correo: responde una página, no JSON.
+  if (action === 'cobAprobar') return cobAprobarCorreo_(e.parameter);
+
   let result;
   try {
-    if (action) {
+    if (COB_ACCIONES.hasOwnProperty(action)) {
+      result = cobRouter_(action, e.parameter);
+    } else if (action) {
       // Mutación: serializa con un lock para evitar condiciones de carrera.
       const lock = LockService.getScriptLock();
       lock.tryLock(10000);
@@ -81,6 +89,14 @@ function doPost(e) {
     payload = JSON.parse(e.postData.contents);
   } catch (err) {
     return jsonResp({ ok: false, error: 'JSON inválido' });
+  }
+
+  if (COB_ACCIONES.hasOwnProperty(payload.action)) {
+    try {
+      return jsonResp(cobRouter_(payload.action, payload));
+    } catch (err) {
+      return jsonResp({ ok: false, error: err.message });
+    }
   }
 
   const lock = LockService.getScriptLock();
@@ -305,4 +321,475 @@ function seedMacia() {
   }
 
   return rows.length + ' filas cargadas en "macia"';
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// CENTRAL DE COBROS · cobra la mensualidad de todos los sistemas (SaaS)
+// ══════════════════════════════════════════════════════════════════════════
+// Cada SISTEMA (MesaDirecta, …) tiene su clave y su gracia_dias. Cada CLIENTE
+// puede tener su propia gracia_dias (vacía = la del sistema).
+//   gracia N → se bloquea N días después de vencer (0 = el mismo día).
+//
+// Sistemas (con su clave):
+//   ?action=estado&sistema=S&clave=K&cliente=C      → { activo, vence, dias, gracia, bloqueado }
+//   ?action=enlacePago&sistema=S&clave=K&cliente=C  → { url } a /pagar (vale COB_ENLACE_HORAS)
+// Cliente (con el enlace):
+//   ?action=miCuenta&t=T                            → plan, precios, pagado_hasta, pendiente
+//   POST { action:"reportarPago", t, monto, plan, comprobante, nota }
+// Panel (con la clave del panel, k):
+//   cobListar · cobGuardarSistema · cobGuardarCliente · cobRegistrarPago · cobResolver
+// Correo:
+//   ?action=cobAprobar&id=ID&f=FIRMA                → aprueba con 1 clic
+//
+// ⚙️ Primera vez: correr instalarCobros() desde el editor (▷ Ejecutar) y aceptar
+// los permisos. En el registro de ejecución quedan la clave del panel y la de
+// MesaDirecta. Luego: Implementar → Administrar → Editar → Versión nueva.
+
+// ⚠ Dirección de la página de pago de CollectTrack (tu dominio de Vercel + /pagar).
+const COB_PAGAR_URL = 'https://collect-track.vercel.app/pagar';
+const MESADIRECTA_DIRECTORIO_ID = '1mq1XWd9NzX88qzv9ph9JG2wGVl9Lln2PQpchrqAm1AI';
+
+const COB_TABS = {
+  sistemas:        ['id', 'nombre', 'clave', 'gracia_dias', 'activo'],
+  clientes:        ['id', 'sistema', 'nombre', 'contacto', 'telefono', 'plan', 'precio', 'pagado_hasta', 'gracia_dias', 'estado'],
+  cobros_pagos:    ['id', 'fecha', 'sistema', 'cliente', 'nombre', 'monto', 'plan', 'hasta', 'nota'],
+  cobros_reportes: ['id', 'fecha', 'sistema', 'cliente', 'nombre', 'monto', 'plan', 'comprobante', 'nota', 'estado'],
+};
+const COB_NUM = ['monto', 'precio'];               // el resto se guarda como texto
+const COB_PLANES = { mensual: 1, anual: 12 };      // meses que cubre cada plan
+const COB_PRECIOS = { mensual: 70000, anual: 600000 };
+const COB_GRACIA = 7;                              // si el sistema no trae la suya
+const COB_ENLACE_HORAS = 24;
+const COB_COMPROBANTES = 'Central · Comprobantes';
+const COB_COMPROBANTE_MAX = 4 * 1024 * 1024;
+const COB_TZ = 'America/Bogota';
+const COB_MAX_FALLOS = 10;                         // claves erradas → 10 min bloqueado
+
+// true = escribe (va con lock).
+const COB_ACCIONES = {
+  estado: false, enlacePago: false, miCuenta: false, reportarPago: true,
+  cobListar: false, cobGuardarSistema: true, cobGuardarCliente: true,
+  cobRegistrarPago: true, cobResolver: true,
+};
+
+function cobRouter_(action, p) {
+  if (!COB_ACCIONES[action]) return cobAccion_(action, p);
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(20000)) return { ok: false, error: 'ocupado, intenta de nuevo' };
+  try {
+    return cobAccion_(action, p);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function cobAccion_(action, p) {
+  if (action === 'estado')       return cobEstado_(p);
+  if (action === 'enlacePago')   return cobEnlacePago_(p);
+  if (action === 'miCuenta')     return cobMiCuenta_(cobLeerEnlace_(p.t));
+  if (action === 'reportarPago') return cobReportarPago_(cobLeerEnlace_(p.t), p);
+  cobSoloPanel_(p.k);
+  if (action === 'cobListar')         return cobListar_();
+  if (action === 'cobGuardarSistema') return cobGuardarSistema_(p);
+  if (action === 'cobGuardarCliente') return cobGuardarCliente_(p);
+  if (action === 'cobRegistrarPago')  return cobRegistrarPago_(p);
+  if (action === 'cobResolver')       return cobResolver_(p.id, String(p.aprobar) === 'true');
+  return { ok: false, error: 'acción desconocida' };
+}
+
+// ── Acceso ───────────────────────────────────────────────────────────────────
+function cobProps_() { return PropertiesService.getScriptProperties(); }
+function cobAleatorio_(n) {
+  let s = '';
+  while (s.length < n) s += Utilities.getUuid().replace(/-/g, '');
+  return s.slice(0, n);
+}
+function cobSecreto_() {
+  let s = cobProps_().getProperty('COBROS_SECRETO');
+  if (!s) { s = cobAleatorio_(48); cobProps_().setProperty('COBROS_SECRETO', s); }
+  return s;
+}
+function cobFirma_(txt) {
+  return Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(txt, cobSecreto_())).replace(/=+$/, '');
+}
+// Cuenta intentos fallidos por llave; demasiados → bloqueado 10 min.
+function cobIntento_(llave, ok) {
+  const c = CacheService.getScriptCache();
+  const kf = 'cobfail:' + llave;
+  const n = Number(c.get(kf) || 0);
+  if (n >= COB_MAX_FALLOS) throw new Error('demasiados intentos, espera 10 minutos');
+  if (ok) { if (n) c.remove(kf); return; }
+  c.put(kf, String(n + 1), 600);
+  throw new Error('clave incorrecta');
+}
+function cobSoloPanel_(k) {
+  const clave = cobProps_().getProperty('COBROS_ADMIN');
+  cobIntento_('panel', !!clave && String(k || '') === clave);
+}
+function cobSistemaAuth_(id, clave) {
+  const s = cobFila_('sistemas', function (r) { return r.id === String(id || '').trim(); });
+  cobIntento_('sis:' + id, !!s && !!s.clave && String(clave || '') === s.clave);
+  return s;
+}
+
+// Enlace de pago: sistema|cliente|vence firmado. Nadie puede armar uno a mano.
+function cobEnlacePago_(p) {
+  const s = cobSistemaAuth_(p.sistema, p.clave);
+  const c = cobCliente_(s.id, p.cliente);
+  if (!c) return { ok: false, error: 'cliente no existe' };
+  const base = Utilities.base64EncodeWebSafe(s.id + '|' + c.id + '|' + (Date.now() + COB_ENLACE_HORAS * 3600000));
+  return { ok: true, url: COB_PAGAR_URL + '?t=' + encodeURIComponent(base + '.' + cobFirma_(base)) };
+}
+function cobLeerEnlace_(t) {
+  const partes = String(t || '').split('.');
+  if (partes.length !== 2 || cobFirma_(partes[0]) !== partes[1]) throw new Error('enlace inválido');
+  const d = Utilities.newBlob(Utilities.base64DecodeWebSafe(partes[0])).getDataAsString().split('|');
+  if (Number(d[2]) < Date.now()) throw new Error('enlace vencido');
+  const s = cobFila_('sistemas', function (r) { return r.id === d[0]; });
+  const c = s && cobCliente_(s.id, d[1]);
+  if (!c) throw new Error('enlace inválido');
+  return { s: s, c: c };
+}
+
+// ── Hojas ────────────────────────────────────────────────────────────────────
+function cobSheet_(name) {
+  let sh = SS.getSheetByName(name);
+  if (!sh) sh = SS.insertSheet(name);
+  const cols = COB_TABS[name];
+  const lastCol = Math.max(sh.getLastColumn(), 1);
+  const h = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
+  const faltan = cols.filter(function (c) { return h.indexOf(c) === -1; });
+  if (faltan.length) {
+    const desde = h.filter(String).length + 1;
+    sh.getRange(1, desde, 1, faltan.length).setValues([faltan]);
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+function cobTexto_(v) {
+  if (v instanceof Date) return Utilities.formatDate(v, COB_TZ, 'yyyy-MM-dd');
+  return String(v == null ? '' : v).trim();
+}
+function cobFilas_(name) {
+  const values = cobSheet_(name).getDataRange().getValues();
+  const h = values[0].map(String);
+  const out = [];
+  for (let i = 1; i < values.length; i++) {
+    const o = { _r: i + 1 };
+    h.forEach(function (k, c) { if (k) o[k] = COB_NUM.indexOf(k) !== -1 ? Number(values[i][c]) || 0 : cobTexto_(values[i][c]); });
+    if (o.id) out.push(o);
+  }
+  return out;
+}
+function cobFila_(name, fn) { return cobFilas_(name).filter(fn)[0] || null; }
+function cobCliente_(sistema, id) {
+  return cobFila_('clientes', function (r) { return r.sistema === sistema && r.id === String(id || '').trim(); });
+}
+// Escribe los campos de `o` en la fila r (o al final si r falta).
+function cobEscribir_(name, o, r) {
+  const sh = cobSheet_(name);
+  const h = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
+  const fila = r || sh.getLastRow() + 1;
+  const rango = sh.getRange(fila, 1, 1, h.length);
+  const actual = r ? rango.getValues()[0] : h.map(function () { return ''; });
+  rango.setNumberFormats([h.map(function (k) { return COB_NUM.indexOf(k) !== -1 ? 'General' : '@'; })]);
+  rango.setValues([h.map(function (k, c) { return o[k] !== undefined ? o[k] : actual[c]; })]);
+  return fila;
+}
+
+// ── Fechas ───────────────────────────────────────────────────────────────────
+function cobHoy_() { return Utilities.formatDate(new Date(), COB_TZ, 'yyyy-MM-dd'); }
+function cobFechaOk_(f) { return /^\d{4}-\d{2}-\d{2}$/.test(String(f || '')); }
+function cobDias_(f) {
+  const a = cobHoy_().split('-').map(Number);
+  const b = String(f).split('-').map(Number);
+  return Math.round((Date.UTC(b[0], b[1] - 1, b[2]) - Date.UTC(a[0], a[1] - 1, a[2])) / 86400000);
+}
+// Suma meses a "yyyy-MM-dd" (31 ene + 1 mes = 28/29 feb).
+function cobSumarMeses_(f, n) {
+  const a = String(f).split('-').map(Number);
+  const ultimo = new Date(Date.UTC(a[0], a[1] - 1 + n + 1, 0)).getUTCDate();
+  const d = new Date(Date.UTC(a[0], a[1] - 1 + n, Math.min(a[2], ultimo)));
+  return Utilities.formatDate(d, 'UTC', 'yyyy-MM-dd');
+}
+
+// ── Reglas ───────────────────────────────────────────────────────────────────
+function cobGracia_(c, s) {
+  if (c.gracia_dias !== '') return Math.max(0, Number(c.gracia_dias) || 0);
+  if (s && s.gracia_dias !== '') return Math.max(0, Number(s.gracia_dias) || 0);
+  return COB_GRACIA;
+}
+function cobPlan_(c) { return COB_PLANES[c.plan] ? c.plan : 'mensual'; }
+function cobPrecio_(c) { return Number(c.precio) || COB_PRECIOS[cobPlan_(c)]; }
+
+// Estado de un cliente según su regla. Sin fecha de pago → no se bloquea.
+function cobCalc_(c, s) {
+  const gracia = cobGracia_(c, s);
+  const vence = cobFechaOk_(c.pagado_hasta) ? c.pagado_hasta : '';
+  const dias = vence ? cobDias_(vence) : null;
+  const activo = c.estado !== 'pausado';
+  const vencido = vence !== '' && dias <= -gracia;
+  return { activo: activo, vence: vence, dias: dias, gracia: gracia, bloqueado: !activo || vencido };
+}
+
+function cobEstado_(p) {
+  const s = cobSistemaAuth_(p.sistema, p.clave);
+  const c = cobCliente_(s.id, p.cliente);
+  if (!c) return { ok: false, error: 'cliente no existe' };
+  return Object.assign({ ok: true }, cobCalc_(c, s));
+}
+
+// Registra un pago y corre la fecha 1 o 12 meses. Si aún no estaba bloqueado se
+// cuenta desde su vencimiento; si ya estaba bloqueado o sin fecha, desde hoy.
+function cobRegistrarPago_(p) {
+  const s = cobFila_('sistemas', function (r) { return r.id === String(p.sistema || ''); });
+  const c = s && cobCliente_(s.id, p.cliente);
+  if (!c) return { ok: false, error: 'cliente no existe' };
+  const plan = COB_PLANES[p.plan] ? p.plan : cobPlan_(c);
+  const monto = Math.max(0, Number(p.monto) || 0);
+  if (!monto) return { ok: false, error: 'falta el valor del pago' };
+  const e = cobCalc_(c, s);
+  const desde = e.vence && e.dias > -e.gracia ? e.vence : cobHoy_();
+  const hasta = cobSumarMeses_(desde, COB_PLANES[plan]);
+
+  const fila = { id: Utilities.getUuid(), fecha: cobHoy_(), sistema: s.id, cliente: c.id, nombre: c.nombre, monto: monto, plan: plan, hasta: hasta, nota: String(p.nota || '').trim().slice(0, 200) };
+  cobEscribir_('cobros_pagos', fila);
+  cobEscribir_('clientes', { pagado_hasta: hasta, plan: plan }, c._r);
+  return { ok: true, pago: fila };
+}
+
+// ── Pago que reporta el cliente ──────────────────────────────────────────────
+function cobPendiente_(sistema, cliente) {
+  return cobFila_('cobros_reportes', function (r) { return r.sistema === sistema && r.cliente === cliente && r.estado === 'pendiente'; });
+}
+
+function cobMiCuenta_(x) {
+  const c = x.c;
+  const plan = cobPlan_(c);
+  const pend = cobPendiente_(x.s.id, c.id);
+  return {
+    ok: true,
+    nombre: c.nombre,
+    sistema: x.s.nombre,
+    plan: plan,
+    precios: { mensual: plan === 'anual' ? COB_PRECIOS.mensual : cobPrecio_(c), anual: plan === 'anual' ? cobPrecio_(c) : COB_PRECIOS.anual },
+    pagado_hasta: cobFechaOk_(c.pagado_hasta) ? c.pagado_hasta : '',
+    pendiente: pend ? { fecha: pend.fecha, monto: pend.monto } : null,
+  };
+}
+
+function cobReportarPago_(x, p) {
+  const plan = COB_PLANES[p.plan] ? p.plan : 'mensual';
+  const monto = Math.max(0, Number(p.monto) || 0);
+  if (!monto) return { ok: false, error: 'falta el valor del pago' };
+  const m = /^data:(image\/(?:png|jpeg|webp));base64,(.+)$/.exec(String(p.comprobante || ''));
+  if (!m) return { ok: false, error: 'falta la foto del comprobante' };
+  const bytes = Utilities.base64Decode(m[2]);
+  if (bytes.length > COB_COMPROBANTE_MAX) return { ok: false, error: 'la foto es muy pesada' };
+
+  const fecha = cobHoy_();
+  const it = DriveApp.getFoldersByName(COB_COMPROBANTES);
+  const carpeta = it.hasNext() ? it.next() : DriveApp.createFolder(COB_COMPROBANTES);
+  const ext = m[1].split('/')[1].replace('jpeg', 'jpg');
+  const archivo = carpeta.createFile(Utilities.newBlob(bytes, m[1], '[' + x.s.id + ' · ' + x.c.id + '] ' + fecha + '.' + ext));
+
+  const fila = { id: Utilities.getUuid(), fecha: fecha, sistema: x.s.id, cliente: x.c.id, nombre: x.c.nombre, monto: monto, plan: plan, comprobante: archivo.getUrl(), nota: String(p.nota || '').trim().slice(0, 200), estado: 'pendiente' };
+  cobEscribir_('cobros_reportes', fila);
+  cobAvisar_(fila, x.s);
+  return { ok: true, reporte: { fecha: fecha, monto: monto } };
+}
+
+function cobEsc_(t) {
+  return String(t).replace(/[&<>"]/g, function (ch) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]; });
+}
+
+// Correo al dueño del script con el botón de aprobar.
+function cobAvisar_(f, s) {
+  try {
+    const plata = '$' + Number(f.monto).toLocaleString('es-CO');
+    const link = ScriptApp.getService().getUrl() + '?action=cobAprobar&id=' + encodeURIComponent(f.id) + '&f=' + cobFirma_('aprobar|' + f.id);
+    MailApp.sendEmail({
+      to: Session.getEffectiveUser().getEmail(),
+      subject: '💰 Pago reportado · ' + f.nombre + ' (' + s.nombre + ') · ' + plata,
+      body: f.nombre + ' (' + s.nombre + ') reportó un pago de ' + plata + ' · plan ' + f.plan + '.\n\n' +
+        'Comprobante: ' + f.comprobante + '\n' + (f.nota ? 'Nota: ' + f.nota + '\n' : '') +
+        '\nRevisa que llegó a tu Nu y aprueba aquí: ' + link,
+      htmlBody: '<p><b>' + cobEsc_(f.nombre) + '</b> (' + cobEsc_(s.nombre) + ') reportó un pago de <b>' + plata + '</b> · plan ' + cobEsc_(f.plan) + '.</p>' +
+        '<p><a href="' + cobEsc_(f.comprobante) + '">Ver comprobante</a></p>' + (f.nota ? '<p>Nota: ' + cobEsc_(f.nota) + '</p>' : '') +
+        '<p>Revisa que llegó a tu Nu y luego:</p>' +
+        '<p><a href="' + link + '" style="background:#13e7c3;color:#080808;padding:12px 22px;border-radius:8px;font-weight:700;text-decoration:none;display:inline-block">✓ Aprobar pago</a></p>' +
+        '<p style="color:#888;font-size:12px">Para rechazarlo, entra al panel de cobros de CollectTrack.</p>',
+    });
+  } catch (e) {
+    console.error('no se pudo enviar el correo: ' + e); // el reporte igual queda guardado
+  }
+}
+
+function cobAprobarCorreo_(p) {
+  let msg;
+  try {
+    if (!p.id || cobFirma_('aprobar|' + p.id) !== String(p.f || '')) throw new Error('enlace inválido');
+    const lock = LockService.getScriptLock();
+    if (!lock.tryLock(20000)) throw new Error('ocupado, vuelve a abrir el enlace');
+    let res;
+    try { res = cobResolver_(p.id, true); } finally { lock.releaseLock(); }
+    msg = res.ok ? '✓ Pago aprobado. Pagado hasta el ' + res.pago.hasta + '.' : res.error;
+  } catch (e) {
+    msg = e.message;
+  }
+  return HtmlService.createHtmlOutput(
+    '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+    '<div style="font-family:sans-serif;max-width:420px;margin:60px auto;padding:0 16px;text-align:center;font-size:18px">' + cobEsc_(msg) + '</div>'
+  ).setTitle('Central de cobros');
+}
+
+// Aprobar = registra el pago (corre la fecha); rechazar = solo lo marca.
+function cobResolver_(id, aprobar) {
+  const rep = cobFila_('cobros_reportes', function (r) { return r.id === String(id); });
+  if (!rep) return { ok: false, error: 'pago no encontrado' };
+  if (rep.estado !== 'pendiente') return { ok: false, error: 'ese pago ya fue revisado (' + rep.estado + ')' };
+  let res = { ok: true };
+  if (aprobar) {
+    res = cobRegistrarPago_({ sistema: rep.sistema, cliente: rep.cliente, monto: rep.monto, plan: rep.plan, nota: 'Bre-B · reportado por el cliente' });
+    if (!res.ok) return res;
+  }
+  cobEscribir_('cobros_reportes', { estado: aprobar ? 'aprobado' : 'rechazado' }, rep._r);
+  return Object.assign(res, { estado: aprobar ? 'aprobado' : 'rechazado' });
+}
+
+// ── Panel ────────────────────────────────────────────────────────────────────
+function cobLimpia_(o) { const c = Object.assign({}, o); delete c._r; return c; }
+
+function cobListar_() {
+  const sistemas = cobFilas_('sistemas');
+  const porId = {};
+  sistemas.forEach(function (s) { porId[s.id] = s; });
+  const clientes = cobFilas_('clientes').map(function (c) {
+    return Object.assign(cobLimpia_(c), cobCalc_(c, porId[c.sistema]), { valor: cobPrecio_(c), plan: cobPlan_(c) });
+  });
+  return {
+    ok: true,
+    hoy: cobHoy_(),
+    sistemas: sistemas.map(cobLimpia_),
+    clientes: clientes,
+    reportes: cobFilas_('cobros_reportes').map(cobLimpia_).reverse().slice(0, 100),
+  };
+}
+
+function cobSlug_(s) {
+  return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+function cobGraciaTxt_(v) {
+  const t = String(v == null ? '' : v).trim();
+  return t === '' ? '' : String(Math.max(0, Math.round(Number(t) || 0)));
+}
+
+function cobGuardarSistema_(p) {
+  const nombre = String(p.nombre || '').trim();
+  if (!nombre) return { ok: false, error: 'falta el nombre' };
+  const id = String(p.id || '').trim() || cobSlug_(nombre);
+  if (!id) return { ok: false, error: 'nombre inválido' };
+  const s = cobFila_('sistemas', function (r) { return r.id === id; });
+  if (p.nuevo === 'true' && s) return { ok: false, error: 'ya existe un sistema con ese nombre' };
+  const o = { id: id, nombre: nombre, gracia_dias: cobGraciaTxt_(p.gracia_dias) || String(COB_GRACIA), activo: p.activo === 'no' ? 'no' : 'si' };
+  if (!s || p.nuevaClave === 'true') o.clave = cobAleatorio_(32);
+  cobEscribir_('sistemas', o, s ? s._r : null);
+  return { ok: true };
+}
+
+function cobGuardarCliente_(p) {
+  const sistema = String(p.sistema || '').trim();
+  if (!cobFila_('sistemas', function (r) { return r.id === sistema; })) return { ok: false, error: 'sistema no existe' };
+  const id = String(p.id || '').trim();
+  const nombre = String(p.nombre || '').trim();
+  if (!id || !nombre) return { ok: false, error: 'faltan el código o el nombre' };
+  const c = cobCliente_(sistema, id);
+  if (p.nuevo === 'true' && c) return { ok: false, error: 'ese cliente ya existe en el sistema' };
+  if (p.pagado_hasta && !cobFechaOk_(p.pagado_hasta)) return { ok: false, error: 'fecha inválida' };
+  const o = {
+    id: id, sistema: sistema, nombre: nombre,
+    contacto: String(p.contacto || '').trim(), telefono: String(p.telefono || '').trim(),
+    plan: COB_PLANES[p.plan] ? p.plan : 'mensual',
+    precio: Math.max(0, Number(p.precio) || 0) || '',
+    pagado_hasta: String(p.pagado_hasta || ''),
+    gracia_dias: cobGraciaTxt_(p.gracia_dias),
+    estado: p.estado === 'pausado' ? 'pausado' : 'activo',
+  };
+  cobEscribir_('clientes', o, c ? c._r : null);
+  return { ok: true };
+}
+
+// ── Instalación (correr 1 vez desde el editor) ───────────────────────────────
+// Crea las pestañas, la clave del panel, el sistema MesaDirecta y copia sus
+// restaurantes, pagos y reportes. Se puede volver a correr: no duplica nada.
+function instalarCobros() {
+  Object.keys(COB_TABS).forEach(cobSheet_);
+  cobSecreto_();
+  let admin = cobProps_().getProperty('COBROS_ADMIN');
+  if (!admin) { admin = cobAleatorio_(12); cobProps_().setProperty('COBROS_ADMIN', admin); }
+
+  let md = cobFila_('sistemas', function (r) { return r.id === 'mesadirecta'; });
+  if (!md) {
+    cobEscribir_('sistemas', { id: 'mesadirecta', nombre: 'MesaDirecta', clave: cobAleatorio_(32), gracia_dias: '7', activo: 'si' });
+    md = cobFila_('sistemas', function (r) { return r.id === 'mesadirecta'; });
+  }
+
+  const dir = SpreadsheetApp.openById(MESADIRECTA_DIRECTORIO_ID);
+  const leer = function (tab) {
+    const sh = dir.getSheetByName(tab);
+    if (!sh) return [];
+    const v = sh.getDataRange().getValues();
+    const h = v[0].map(String);
+    return v.slice(1).map(function (r) {
+      const o = {};
+      h.forEach(function (k, c) { o[k] = r[c] instanceof Date ? cobTexto_(r[c]) : r[c]; });
+      return o;
+    });
+  };
+  const si = function (v) { return v === true || String(v).toUpperCase() === 'TRUE'; };
+
+  const yaCli = {};
+  cobFilas_('clientes').forEach(function (c) { yaCli[c.sistema + '|' + c.id] = 1; });
+  let nCli = 0;
+  leer('directorio').forEach(function (t) {
+    const id = String(t.codigo || '').trim();
+    if (!id || si(t.admin) || yaCli['mesadirecta|' + id]) return;
+    cobEscribir_('clientes', {
+      id: id, sistema: 'mesadirecta', nombre: String(t.nombre || ''),
+      contacto: String(t.contacto || ''), telefono: String(t.telefono || ''),
+      plan: COB_PLANES[t.plan] ? t.plan : 'mensual', precio: Number(t.precio) || '',
+      pagado_hasta: cobFechaOk_(t.pagado_hasta) ? String(t.pagado_hasta) : '',
+      gracia_dias: '', estado: si(t.activo) ? 'activo' : 'pausado',
+    });
+    nCli++;
+  });
+
+  const copiar = function (origen, destino) {
+    const ya = {};
+    cobFilas_(destino).forEach(function (r) { ya[r.id] = 1; });
+    let n = 0;
+    leer(origen).forEach(function (r) {
+      if (!r.id || ya[r.id]) return;
+      const o = { sistema: 'mesadirecta', cliente: String(r.codigo || '') };
+      COB_TABS[destino].forEach(function (k) {
+        if (k === 'sistema' || k === 'cliente' || r[k] === undefined) return;
+        o[k] = COB_NUM.indexOf(k) !== -1 ? Number(r[k]) || 0 : String(r[k]);
+      });
+      cobEscribir_(destino, o);
+      n++;
+    });
+    return n;
+  };
+  const nPag = copiar('pagos', 'cobros_pagos');
+  const nRep = copiar('reportes', 'cobros_reportes');
+
+  // Pide permisos de correo y Drive desde ya (no al primer pago).
+  DriveApp.getRootFolder();
+  MailApp.getRemainingDailyQuota();
+
+  const txt = 'Clave del panel de cobros: ' + admin + '\n' +
+    'Clave de MesaDirecta: ' + md.clave + '\n' +
+    'Copiados de MesaDirecta → clientes: ' + nCli + ' · pagos: ' + nPag + ' · reportes: ' + nRep;
+  console.log(txt);
+  return txt;
 }

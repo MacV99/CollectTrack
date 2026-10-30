@@ -12,6 +12,7 @@ import { state } from './state.js';
 import { loadTags, mergeTags } from './lib/storage.js';
 import { restoreTabs, switchMacvSubtab, switchTab } from './ui/tabs.js';
 import { authLogin, initAuth, logout } from './features/auth.js';
+import { cobAbrirCliente, cobAbrirPago, cobAbrirSistema, cobCargar, cobCerrar, cobCopiarClave, cobEntrar, cobFiltrar, cobGuardarCliente, cobGuardarPago, cobGuardarSistema, cobResolver } from './features/cobros.js';
 
 /* ── INIT MACIA ───────────────────────────────────────── */
 loadMaciaStorage();
@@ -58,6 +59,9 @@ Object.assign(window, {
   applyDebtFilters, sortDebtsBy, segSetDebt,
   openDebtModal, submitDebtModal, closeDebtModal, deleteDebt, toggleDebtStatus,
   authLogin, logout,
+  cobEntrar, cobCargar, cobFiltrar, cobCerrar, cobResolver,
+  cobAbrirCliente, cobGuardarCliente, cobAbrirSistema, cobGuardarSistema, cobCopiarClave,
+  cobAbrirPago, cobGuardarPago,
 });
 
 /* ── INIT ───────────────────────────────────────────── */
