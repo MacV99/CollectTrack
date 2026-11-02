@@ -5,14 +5,14 @@ import { loadData, refreshAll } from './data.js';
 import { fmtAmount } from '../lib/format.js';
 import { closeBalanceModal, closeMaciaModal, closeRepartoModal, loadMaciaFromGAS, refreshMacia, saveMacia } from './macia.js';
 import { loadDebtsFromGAS, refreshDebts, saveDebts } from './debts.js';
-import { closeDayTips } from '../ui/menus.js';
+import { closeDayTips, closeRowMenus } from '../ui/menus.js';
 import { showNotification } from '../ui/notify.js';
 import { resolveRow, rowMatch, shiftRowsAfterDelete, state } from '../state.js';
 import { saveCache, saveTag } from '../lib/storage.js';
 
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
-  document.querySelectorAll('.row-menu.open').forEach(m => m.classList.remove('open'));
+  closeRowMenus();
   closeDayTips();
   closeModal();
   closeConfirm();

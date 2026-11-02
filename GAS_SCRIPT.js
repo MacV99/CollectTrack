@@ -113,6 +113,8 @@ function doPost(e) {
 
 // ── READ ─────────────────────────────────────────────────────────────────────
 function readSheet(name) {
+  // Las pestañas de la central de cobros (claves, clientes) no se leen por aquí.
+  if (COB_TABS.hasOwnProperty(name)) return [];
   const sheet = SS.getSheetByName(name);
   if (!sheet) return [];
 

@@ -64,19 +64,47 @@ export function rowMenu(sheet, r) {
   ]);
 }
 
+// El pop se abre colgado de <body> (position: fixed): dentro de la tabla lo
+// recortaba el overflow de .table-scroll / .panel y aparecía una barra de scroll.
+let openPop = null;
+
 export function toggleRowMenu(e) {
   e.stopPropagation();
-  const menu = e.currentTarget.closest('.row-menu');
+  const btn = e.currentTarget;
+  const menu = btn.closest('.row-menu');
   const wasOpen = menu.classList.contains('open');
-  document.querySelectorAll('.row-menu.open').forEach(m => m.classList.remove('open'));
-  if (!wasOpen) menu.classList.add('open');
+  closeRowMenus();
+  if (wasOpen) return;
+
+  const pop = menu.querySelector('.row-menu-pop');
+  pop._home = menu;
+  document.body.appendChild(pop);
+  menu.classList.add('open');
+  pop.classList.add('open');
+  openPop = pop;
+
+  const b = btn.getBoundingClientRect();
+  const h = pop.offsetHeight;
+  const abajo = b.bottom + 6 + h <= window.innerHeight - 8;
+  pop.style.top = (abajo ? b.bottom + 6 : b.top - 6 - h) + 'px';
+  pop.style.left = Math.max(8, b.right - pop.offsetWidth) + 'px';
 }
 
-// Close any open kebab menu on outside click / Escape.
-document.addEventListener('click', () => {
+export function closeRowMenus() {
   document.querySelectorAll('.row-menu.open').forEach(m => m.classList.remove('open'));
+  if (!openPop) return;
+  openPop.classList.remove('open');
+  openPop._home.appendChild(openPop);
+  openPop = null;
+}
+
+// Close any open kebab menu on outside click / scroll / resize.
+document.addEventListener('click', () => {
+  closeRowMenus();
   closeDayTips();
 });
+window.addEventListener('scroll', closeRowMenus, true);
+window.addEventListener('resize', closeRowMenus);
 
 /* ── TOGGLE PAID ────────────────────────────────────── */
 // Marca / desmarca un registro como pagado en el periodo actual.

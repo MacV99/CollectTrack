@@ -35,7 +35,14 @@
   --tr: 180ms ease;
 }
 
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; color-scheme: dark; }
+
+/* Barras de scroll finas y oscuras (el gris claro de Windows no cuadra). */
+* { scrollbar-width: thin; scrollbar-color: var(--border-bright) transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: #3d3d3d; }
 
 body {
   background-color: var(--bg);
@@ -317,14 +324,16 @@ tbody td { padding: 15px 22px; font-size: 12px; vertical-align: middle; }
 
 /* ── ROW KEBAB MENU ──────────────────────────── */
 .row-menu { position: relative; display: inline-flex; }
+/* Al abrirse, toggleRowMenu() lo mueve a <body> y le pone top/left: así no
+   lo recorta el overflow de la tabla. Queda bajo el header (100) y los modales (200). */
 .row-menu-pop {
-  position: absolute; top: calc(100% + 6px); right: 0;
+  position: fixed; top: 0; left: 0;
   min-width: 152px; padding: 5px;
   background: var(--surface-2); border: 1px solid var(--border-bright);
   border-radius: 10px; box-shadow: 0 14px 34px rgba(0, 0, 0, .5);
-  display: none; z-index: 60;
+  display: none; z-index: 90;
 }
-.row-menu.open .row-menu-pop { display: block; animation: fadeIn .12s ease; }
+.row-menu-pop.open { display: block; animation: fadeIn .12s ease; }
 .row-menu-pop button {
   display: flex; align-items: center; gap: 9px; width: 100%;
   padding: 9px 10px; background: transparent; border: none; border-radius: 7px;
@@ -412,6 +421,8 @@ tbody td { padding: 15px 22px; font-size: 12px; vertical-align: middle; }
 @media (hover: hover) {
   .day-chip:hover .day-tip { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
+/* En la última fila se abre hacia arriba: abajo lo recortaría la tabla. */
+tbody tr:last-child .day-tip { top: auto; bottom: calc(100% + 6px); }
 
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
 
