@@ -17,6 +17,8 @@
         saldo total disponible). Ese mes puede quedar en negativo (usa
         ahorro de meses anteriores); el saldo total baja. Sin 20/80.
         Si no hay saldo disponible (≤ 0) no se paga nada.
+     5. Lo que se le quede debiendo del sueldo a Cuellar se le suma al
+        mes siguiente (y va antes que el 20/80 de ese mes).
 
    Módulo PURO (sin DOM): recibe las transacciones y devuelve datos.
    La UI vive aparte.
@@ -35,6 +37,9 @@ export function sueldoDelMes(mk) {
   for (const s of SUELDOS_CUELLAR) if (mk >= s.desde) monto = s.monto;
   return monto;
 }
+// Desde este mes, lo que falte del sueldo pasa al mes siguiente. Los meses
+// anteriores no generan deuda (ya están cerrados).
+export const DEUDA_DESDE     = '2026-10';
 export const PCT_CUELLAR     = 0.20;      // 20% del sobrante para Cuellar
 export const PCT_CAMACHO     = 0.80;      // 80% del sobrante para Camacho
 // Colchón: plata que SIEMPRE se queda en la cuenta (Nu+Nequi) para gastos
@@ -82,7 +87,7 @@ export function calcRepartoMensual(maciaTx, disponibleInsuf = null) {
     const mk = (t.date || '').slice(0, 7);
     if (!mk) return;
     if (!meses[mk]) meses[mk] = {
-      mk, ingresos: 0, egresos: 0, saldoMes: 0,
+      mk, ingresos: 0, egresos: 0, saldoMes: 0, pagadoSueldo: 0,
       doneSueldo: false, doneCuellar: false, doneCamacho: false,
     };
     const m = meses[mk];
@@ -96,7 +101,7 @@ export function calcRepartoMensual(maciaTx, disponibleInsuf = null) {
 
     // Las 3 líneas de reparto no entran al neto de cálculo; solo marcan
     // qué ya se pagó (para no dañar el reparto del mes).
-    if (isSueldo(t))    { m.doneSueldo  = true; return; }
+    if (isSueldo(t))    { m.doneSueldo  = true; m.pagadoSueldo += t.amount; return; }
     if (isCuellar20(t)) { m.doneCuellar = true; return; }
     if (isCamacho80(t)) { m.doneCamacho = true; return; }
 
@@ -104,24 +109,38 @@ export function calcRepartoMensual(maciaTx, disponibleInsuf = null) {
     else                      m.egresos  += t.amount;
   });
 
+  // Del mes más viejo al más nuevo: cada mes recibe lo que el anterior le
+  // quedó debiendo a Cuellar.
+  let deuda    = 0;   // sueldo que quedó faltando del mes anterior
+  let apartado = 0;   // parte de esa deuda que ya se descontó del neto de antes
+
   return Object.values(meses)
+    .sort((a, b) => (a.mk > b.mk ? 1 : -1))
     .map(m => {
       const neto       = m.ingresos - m.egresos;
       const sueldoBase = sueldoDelMes(m.mk);
-      const suficiente = neto >= sueldoBase;
-      // Mes insuficiente: a Cuellar se le paga hasta el sueldo, tomando del
-      // saldo total disponible (no solo del neto del mes). Nunca negativo,
-      // nunca más que el sueldo. El mes puede quedar en rojo; el total baja.
-      const disp       = disponibleInsuf == null ? neto : disponibleInsuf;
-      const sueldo     = suficiente ? sueldoBase : Math.max(0, Math.min(sueldoBase, disp));
-      let sobrante     = suficiente ? neto - sueldoBase : 0;
+      const deudaMes   = deuda;
+      const objetivo   = sueldoBase + deudaMes;   // sueldo + lo que se le debe
+      const suficiente = neto >= objetivo - apartado;
+      // A Cuellar se le paga hasta el objetivo, tomando del saldo total
+      // disponible (no solo del neto del mes). Nunca negativo. Si ya se pagó,
+      // vale lo que realmente se pagó. El mes puede quedar en rojo.
+      const disp       = disponibleInsuf == null ? (suficiente ? objetivo : neto) : disponibleInsuf;
+      const sueldo     = m.doneSueldo ? m.pagadoSueldo : Math.max(0, Math.min(objetivo, disp));
+      const faltante   = m.mk >= DEUDA_DESDE ? Math.max(0, objetivo - sueldo) : 0;
+      let sobrante     = suficiente ? neto - (objetivo - apartado) : 0;
+      // Lo que pasa al mes siguiente: solo si este sueldo ya se registró (si
+      // no, sigue pendiente aquí). Si el mes alcanzó, esa plata ya quedó
+      // separada del 20/80 y no se vuelve a descontar.
+      deuda    = m.doneSueldo ? faltante : 0;
+      apartado = suficiente ? deuda : 0;
       // Colchón: el 20/80 pendiente no puede dejar el saldo total por debajo
       // de COLCHON. El sueldo de Cuellar SÍ puede tomar del colchón.
       // Si ninguna de las 2 se ha pagado, se recorta el sobrante (20/80 parejo);
       // si una ya se pagó, solo se recorta la que falta.
       let recorteColchon = 0;
       const libreTrasSueldo = disponibleInsuf == null ? Infinity
-        : disponibleInsuf - COLCHON - (m.doneSueldo ? 0 : sueldo);
+        : disponibleInsuf - COLCHON - (m.doneSueldo ? faltante : sueldo);
       if (suficiente && !m.doneCuellar && !m.doneCamacho) {
         const tope = Math.max(0, Math.min(sobrante, libreTrasSueldo));
         recorteColchon += sobrante - tope;
@@ -150,6 +169,9 @@ export function calcRepartoMensual(maciaTx, disponibleInsuf = null) {
         neto,
         suficiente,
         sueldoBase,
+        objetivo,
+        deudaAnterior: deudaMes,
+        faltante,
         sueldo,
         sobrante,
         cuellar20,
@@ -160,7 +182,7 @@ export function calcRepartoMensual(maciaTx, disponibleInsuf = null) {
         completo,
       };
     })
-    .sort((a, b) => (a.mk < b.mk ? 1 : -1));
+    .reverse();
 }
 
 /* ── LÍNEAS DE REPARTO (fuente única) ─────────────────── */

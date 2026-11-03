@@ -419,7 +419,7 @@ function repartoModalBodyHTML(mk, m) {
         <span>Sobrante a repartir <b>${fmtAmount(m.sobrante)}</b></span>
       </div>`
     : `<p class="reparto-modal-note">El neto (<b>${fmtAmount(m.neto)}</b>) no alcanza el
-        sueldo de ${fmtAmount(m.sueldoBase)}. Se le paga a Cuellar <b>${fmtAmount(m.sueldo)}</b>
+        sueldo de ${fmtAmount(m.objetivo)}. Se le paga a Cuellar <b>${fmtAmount(m.sueldo)}</b>
         del saldo total; este mes queda en rojo y el total baja.</p>`;
 
   // Insuficiente: solo la línea del sueldo (20/80 van en 0, no se muestran).
@@ -446,7 +446,17 @@ function repartoModalBodyHTML(mk, m) {
         mantener el colchón de ${fmtAmount(COLCHON)} en la cuenta.</p>`
     : '';
 
-  return resumen + colchon + rows;
+  // Lo que se le debía del mes pasado y lo que pasa al mes siguiente.
+  const deudaAnterior = m.deudaAnterior > 0
+    ? `<p class="reparto-modal-note">El sueldo incluye <b>${fmtAmount(m.deudaAnterior)}</b> que
+        se le quedaron debiendo a Cuellar el mes pasado.</p>`
+    : '';
+  const faltante = m.faltante > 0
+    ? `<p class="reparto-modal-note">Le quedan faltando <b>${fmtAmount(m.faltante)}</b>: se le
+        suman al sueldo del mes siguiente.</p>`
+    : '';
+
+  return resumen + deudaAnterior + faltante + colchon + rows;
 }
 
 /* ── REGISTRAR UNA LÍNEA DE REPARTO (botón Agregar) ───── */
