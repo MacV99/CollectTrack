@@ -75,6 +75,6 @@ export function shiftRowsAfterDelete(arr, rowNum) {
 // la busca por estos valores. Siempre con los valores ANTES de editar.
 export function rowMatch(sheet, r) {
   return sheet === 'cobros'
-    ? { _mNAME: r.name || '', _mAMOUNT: r.amountNum || 0 }
-    : { _mCATEGORY: r.category || '', _mAMOUNT: r.amountNum || 0 };
+    ? { _mNAME: r.name || '', _mAMOUNT: r.amountNum || '' }
+    : { _mCATEGORY: r.category || '', _mAMOUNT: r.amountNum || '' };
 }

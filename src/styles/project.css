@@ -861,6 +861,8 @@ tbody tr:last-child .day-tip { top: auto; bottom: calc(100% + 6px); }
 .seg-btn[data-val="egreso"].active  { color: #f87171; border-color: rgba(248, 113, 113, .5); background: rgba(248, 113, 113, .12); }
 .seg-btn[data-val="nu"].active      { color: #a78bfa; border-color: rgba(167, 139, 250, .5); background: rgba(167, 139, 250, .12); }
 .seg-btn[data-val="nequi"].active   { color: #f472b6; border-color: rgba(244, 114, 182, .5); background: rgba(244, 114, 182, .12); }
+.seg-btn[data-val="me_deben"].active { color: #4ade80; border-color: rgba(74, 222, 128, .5);  background: rgba(74, 222, 128, .12); }
+.seg-btn[data-val="yo_debo"].active  { color: #f87171; border-color: rgba(248, 113, 113, .5); background: rgba(248, 113, 113, .12); }
 
 
 /* ── RESPONSIVE ─────────────────────────────── */
